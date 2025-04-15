@@ -5,3 +5,9 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.35", features = ["derive"] }
+tonic = "*"
+prost = "0.13"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+
+[build-dependencies]
+tonic-build = "*"

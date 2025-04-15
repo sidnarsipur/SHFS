@@ -15,5 +15,12 @@
 	"[toml]": {
 		"editor.tabSize": 2,
 		"editor.insertSpaces": true
+	},
+	"github.copilot.enable": {
+		"*": true,
+		"plaintext": false,
+		"markdown": false,
+		"scminput": false,
+		"go": false
 	}
 }

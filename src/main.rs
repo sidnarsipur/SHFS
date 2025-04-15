@@ -13,16 +13,19 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Naming {},
-    Storage {},
+    Storage { server_name: String },
     Client {},
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
         Some(Commands::Naming {}) => naming::run(),
-        Some(Commands::Storage {}) => storage::run(),
+        Some(Commands::Storage { server_name }) => {
+            storage::create(server_name);
+        }
         Some(Commands::Client {}) => client::run(),
         None => println!("Welcome to DFS. Use -h to see usage."),
     };

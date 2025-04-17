@@ -31,16 +31,21 @@ public:
     }
 };
 
-int main() {
+int main(int argc, char **argv) {
     // enable support for curl or CLion .http requests
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
+    // Default port number
+    std::string port = "6000";
+    if (argc > 1) port = argv[1];
+    const std::string naming_address = "localhost:" + port;
+
     NamingServiceImpl service;
     grpc::ServerBuilder builder;
-    builder.AddListeningPort("0.0.0.0:50051", grpc::InsecureServerCredentials());
+    builder.AddListeningPort(naming_address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on 0.0.0.0:50051\n";
+    const std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    std::cout << "Server listening on " << naming_address << std::endl;
     server->Wait();
 }

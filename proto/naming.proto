@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+service NamingService {
+  rpc LookupFile(LookupRequest) returns (LookupResponse);
+  rpc RegisterStorage(RegisterRequest) returns (RegisterResponse);
+}
+
+message LookupRequest { string filename = 1; }
+message LookupResponse { repeated string storage_address = 1; }
+
+message RegisterRequest { string storage_address = 1; }
+message RegisterResponse { bool success = 1; }

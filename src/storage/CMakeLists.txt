@@ -5,5 +5,6 @@ target_include_directories(storage PRIVATE ${PROJECT_SOURCE_DIR}/common ${PROTO_
 target_link_libraries(storage
         common                # Assuming you defined this in /common/CMakeLists.txt
         gRPC::grpc++
+        gRPC::grpc++_reflection
         protobuf::libprotobuf
 )

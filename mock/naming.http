@@ -1,0 +1,5 @@
+GRPC localhost:50051/NamingService/RegisterStorage
+
+{
+  "storage_address": "Henry"
+}

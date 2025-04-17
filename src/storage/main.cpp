@@ -2,6 +2,7 @@
 #include "hello.grpc.pb.h"
 #include <iostream>
 #include <memory>
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
 
 class GreeterServiceImpl final : public Greeter::Service {
     grpc::Status SayHello(grpc::ServerContext* context, const HelloRequest* request,
@@ -12,6 +13,10 @@ class GreeterServiceImpl final : public Greeter::Service {
 };
 
 int main() {
+    // enable support for curl or CLion .http requests
+    grpc::EnableDefaultHealthCheckService(true);
+    grpc::reflection::InitProtoReflectionServerBuilderPlugin();
+
     GreeterServiceImpl service;
     grpc::ServerBuilder builder;
     builder.AddListeningPort("0.0.0.0:50051", grpc::InsecureServerCredentials());

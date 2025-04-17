@@ -5,5 +5,6 @@ target_include_directories(naming PRIVATE ${PROJECT_SOURCE_DIR}/common ${PROTO_B
 target_link_libraries(naming
         common                # Assuming you defined this in /common/CMakeLists.txt
         gRPC::grpc++
+        gRPC::grpc++_reflection
         protobuf::libprotobuf
 )

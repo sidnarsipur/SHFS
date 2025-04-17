@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.28)
-project(DFS)
+cmake_minimum_required(VERSION 3.26)
+project(DFS CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 
 # Find necessary packages
 find_package(gRPC CONFIG REQUIRED)
@@ -28,15 +29,7 @@ asio_grpc_protobuf_generate(
         PROTOS "${CMAKE_CURRENT_LIST_DIR}/proto/hello.proto"
 )
 
-# === Client & Server executables ===
-add_executable(server src/server.cpp $<TARGET_OBJECTS:proto-objects>)
-add_executable(client src/client.cpp $<TARGET_OBJECTS:proto-objects>)
-
-# Include directories for generated files
-target_include_directories(server PRIVATE ${PROTO_BINARY_DIR})
-target_include_directories(client PRIVATE ${PROTO_BINARY_DIR})
-
-# Link necessary libraries for the executables
-target_link_libraries(server PRIVATE gRPC::grpc++ protobuf::libprotobuf)
-target_link_libraries(client PRIVATE gRPC::grpc++ protobuf::libprotobuf)
-
+add_subdirectory(src/common)
+add_subdirectory(src/naming)
+add_subdirectory(src/storage)
+add_subdirectory(src/client)

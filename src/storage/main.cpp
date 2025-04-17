@@ -6,7 +6,7 @@
 class GreeterServiceImpl final : public Greeter::Service {
     grpc::Status SayHello(grpc::ServerContext* context, const HelloRequest* request,
                           HelloReply* reply) override {
-        reply->set_message("Hello, " + request->name());
+        reply->set_message("hello from storage, " + request->name());
         return grpc::Status::OK;
     }
 };

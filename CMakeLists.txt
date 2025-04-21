@@ -12,7 +12,7 @@ set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(PROTO_IMPORT_DIRS "${CMAKE_CURRENT_LIST_DIR}/proto")
 
 # Proto objects are created by this library
-add_library(proto-objects OBJECT)
+add_library(proto-objects STATIC)
 
 # Link necessary libraries for proto-objects
 target_link_libraries(proto-objects PUBLIC protobuf::libprotobuf gRPC::grpc++_unsecure)

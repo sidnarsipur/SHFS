@@ -1,8 +1,4 @@
-#include <grpcpp/grpcpp.h>
-#include "naming.grpc.pb.h"
-#include <iostream>
-#include <memory>
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
+#include "pch.h"
 #include "naming_service_impl.h"
 
 int main(int argc, char **argv) {
@@ -19,7 +15,7 @@ int main(int argc, char **argv) {
     grpc::ServerBuilder builder;
     builder.AddListeningPort(naming_address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
-    const std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << naming_address << std::endl;
+    const std::unique_ptr server(builder.BuildAndStart());
+    spdlog::info("Server lffistening ofn {}", naming_address);
     server->Wait();
 }

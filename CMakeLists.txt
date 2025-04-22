@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(asio-grpc CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # === Generate Protobuf and gRPC files ===
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")

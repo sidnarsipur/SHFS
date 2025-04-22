@@ -1,0 +1,9 @@
+#pragma once
+#include <grpcpp/grpcpp.h>
+#include <spdlog/spdlog.h>
+#include "naming.grpc.pb.h"
+#include "storage.grpc.pb.h"
+#include <string>
+#include <vector>
+#include <fstream>
+#include "CLI11.hpp"

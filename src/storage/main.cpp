@@ -1,8 +1,4 @@
-#include <grpcpp/grpcpp.h>
-#include <iostream>
-#include <memory>
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
-#include "naming.grpc.pb.h"
+#include "pch.h"
 #include "storage_service_impl.h"
 
 grpc::Status register_storage(const std::string &naming_address, const std::string &storage_address) {

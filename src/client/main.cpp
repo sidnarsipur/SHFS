@@ -1,10 +1,4 @@
-#include <grpcpp/grpcpp.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include "CLI11.hpp"
-#include "naming.grpc.pb.h"
-#include "storage.grpc.pb.h"
+#include "pch.h"
 #include "upload.h"
 #include "download.h"
 

@@ -3,14 +3,14 @@
 
 class StorageNode {
 public:
-    StorageNode::StorageNode(const std::string &naming_address,
+    StorageNode(const std::string &naming_address,
                              const std::string &storage_address)
         : naming_address_(naming_address),
           storage_address_(storage_address),
           naming_stub_(NamingService::NewStub(
               grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))) {}
 
-    void StorageNode::Register() const {
+    void Register() const {
         RegisterStorageRequest req;
         RegisterStorageResponse res;
         grpc::ClientContext ctx;
@@ -25,7 +25,7 @@ public:
         spdlog::info("Registered storage server at {}", storage_address_);
     }
 
-    void StorageNode::SendHeartbeat() const {
+    void SendHeartbeat() const {
         HeartbeatRequest req;
         HeartbeatResponse res;
         grpc::ClientContext ctx;
@@ -40,7 +40,8 @@ public:
         }
     }
 
-    void StorageNode::Run() {
+    void Run() {
+        // enable support for curl or CLion .http requests
         grpc::EnableDefaultHealthCheckService(true);
         grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 

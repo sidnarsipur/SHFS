@@ -1,21 +1,11 @@
 #include "pch.h"
-#include "naming_service_impl.h"
+#include "naming_node.h"
 
 int main(int argc, char **argv) {
-    // enable support for curl or CLion .http requests
-    grpc::EnableDefaultHealthCheckService(true);
-    grpc::reflection::InitProtoReflectionServerBuilderPlugin();
+    std::string port = (argc > 1 ? argv[1] : "6000");
+    std::string naming_addr = "localhost:" + port;
 
-    // Default port number
-    std::string port = "6000";
-    if (argc > 1) port = argv[1];
-    const std::string naming_address = "localhost:" + port;
-
-    NamingServiceImpl service;
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(naming_address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service);
-    const std::unique_ptr server(builder.BuildAndStart());
-    spdlog::info("Server listening on {}", naming_address);
-    server->Wait();
+    NamingNode node(naming_addr);
+    node.Run();
+    return 0;
 }

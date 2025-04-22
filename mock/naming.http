@@ -1,5 +1,30 @@
-GRPC localhost:50051/NamingService/RegisterStorage
+GRPC localhost:6000/NamingService/RegisterStorageServer
 
 {
-  "storage_address": "Henry"
+  "storage_address": "Dart"
+}
+
+###
+GRPC localhost:6000/NamingService/ListAllFiles
+Key: Value
+
+###
+GRPC localhost:6000/NamingService/GetStorageServerForUpload
+
+{
+  "filename": "woah"
+}
+
+###
+GRPC localhost:6000/NamingService/GetStorageServersForFile
+
+{
+  "filename": "woah"
+}
+
+###
+GRPC localhost:6000/NamingService/Heartbeat
+
+{
+  "address": "Dart"
 }

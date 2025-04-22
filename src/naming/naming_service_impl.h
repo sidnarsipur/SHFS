@@ -49,6 +49,7 @@ public:
         response->set_storage_address(*it);
 
         // Update internal state
+        // TODO: handle updating a file, not just uploading new files
         file_locations_[request->filename()].insert(*it);
 
         return grpc::Status::OK;

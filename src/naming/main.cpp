@@ -16,6 +16,6 @@ int main(int argc, char **argv) {
     builder.AddListeningPort(naming_address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
     const std::unique_ptr server(builder.BuildAndStart());
-    spdlog::info("Server lffistening ofn {}", naming_address);
+    spdlog::info("Server listening on {}", naming_address);
     server->Wait();
 }

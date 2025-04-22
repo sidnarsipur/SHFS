@@ -4,6 +4,15 @@
 
 
 void upload_file (const std::string& filepath) {
+    if (!std::filesystem::exists(filepath)) {
+        spdlog::error("File does not exist: {}", filepath);
+        return;
+    }
+    if (!std::filesystem::is_regular_file(filepath)) {
+        spdlog::error("Not a regular file: {}", filepath);
+        return;
+    }
+    std::string filename = std::filesystem::path(filepath).filename().string();
 }
 
 void list_files() {

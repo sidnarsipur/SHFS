@@ -1,12 +1,61 @@
 syntax = "proto3";
 
 service NamingService {
-  rpc LookupFile(LookupRequest) returns (LookupResponse);
-  rpc RegisterStorage(RegisterRequest) returns (RegisterResponse);
+  // Register a new storage server with the naming server.
+  rpc RegisterStorageServer(RegisterStorageRequest) returns (RegisterStorageResponse);
+
+  // Get list of storage servers that have a specific file.
+  rpc GetStorageServersForFile(FileLookupRequest) returns (FileLookupResponse);
+
+  // List all files known to the naming server.
+  rpc ListAllFiles(Empty) returns (FileListResponse);
+
+  // Choose a storage server to upload a new file.
+  rpc GetStorageServerForUpload(FileUploadRequest) returns (FileUploadResponse);
+
+  // Remove a file from the system.
+  rpc RemoveFile(FileRemoveRequest) returns (FileRemoveResponse);
 }
 
-message LookupRequest { string filename = 1; }
-message LookupResponse { repeated string storage_address = 1; }
+// Used when registering a storage server
+message RegisterStorageRequest {
+  string storage_address = 1;
+}
 
-message RegisterRequest { string storage_address = 1; }
-message RegisterResponse { bool success = 1; }
+message RegisterStorageResponse {
+  bool success = 1;
+}
+
+// Request to get all storage servers that store the file
+message FileLookupRequest {
+  string filename = 1;
+}
+
+message FileLookupResponse {
+  repeated string storage_addresses = 1;
+}
+
+// Empty message type for methods like listing all files
+message Empty {}
+
+message FileListResponse {
+  repeated string filenames = 1;
+}
+
+// Request to upload a file
+message FileUploadRequest {
+  string filename = 1;
+}
+
+message FileUploadResponse {
+  string storage_address = 1; // The selected storage server for uploading
+}
+
+// Request to remove a file
+message FileRemoveRequest {
+  string filename = 1;
+}
+
+message FileRemoveResponse {
+  bool success = 1;
+}

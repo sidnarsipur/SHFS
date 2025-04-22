@@ -3,33 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
-
-class NamingServiceImpl final : public NamingService::Service {
-    std::unordered_set<std::string> storage_addresses;
-public:
-    grpc::Status RegisterStorage(grpc::ServerContext* context, const RegisterRequest* request, RegisterResponse* response) override {
-        // Implement the logic for RegisterStorage hereew1
-        const std::string& storage_address = request->storage_address();
-
-        // Store it in the hashmap (keyed by storage address for simplicity)
-        storage_addresses.insert(storage_address);
-        std::cout << "Registering storage with address: " << storage_address << std::endl;
-
-        // Set the response (assuming success)
-        response->set_success(true);
-
-        // Return the response status
-        return grpc::Status::OK;
-    }
-
-    grpc::Status LookupFile(grpc::ServerContext* context, const LookupRequest* request, LookupResponse* response) override {
-        // std::string filename = request->filename();
-        for (const auto& address : storage_addresses) {
-            response->add_storage_address(address); // add each unique address from the set
-        }
-        return grpc::Status::OK;
-    }
-};
+#include "naming_service_impl.h"
 
 int main(int argc, char **argv) {
     // enable support for curl or CLion .http requests

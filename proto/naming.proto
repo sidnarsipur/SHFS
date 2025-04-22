@@ -5,16 +5,19 @@ service NamingService {
   rpc RegisterStorageServer(RegisterStorageRequest) returns (RegisterStorageResponse);
 
   // Get list of storage servers that have a specific file.
-  rpc GetStorageServersForFile(FileLookupRequest) returns (FileLookupResponse);
+  rpc GetStorageServerFileState(FileLookupRequest) returns (FileLookupResponse);
 
   // List all files known to the naming server.
   rpc ListAllFiles(Empty) returns (FileListResponse);
 
-  // Choose a storage server to upload a new file.
-  rpc GetStorageServerForUpload(FileUploadRequest) returns (FileUploadResponse);
+  // Create a file on the system.
+  rpc CreateFile(FileUploadRequest) returns (FileUploadResponse);
 
   // Remove a file from the system.
   rpc RemoveFile(FileRemoveRequest) returns (FileRemoveResponse);
+
+  // Edit a file on the system.
+  rpc EditFile(FileEditRequest) returns (FileEditResponse);
 
   // Heartbeat to check if the naming server is alive. (It's easier to have a pull model!)
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
@@ -31,7 +34,7 @@ message RegisterStorageResponse {
 
 // Request to get all storage servers that store the file
 message FileLookupRequest {
-  string filename = 1;
+  string filepath = 1;
 }
 
 message FileLookupResponse {
@@ -42,12 +45,12 @@ message FileLookupResponse {
 message Empty {}
 
 message FileListResponse {
-  repeated string filenames = 1;
+  repeated string filepaths = 1;
 }
 
 // Request to upload a file
 message FileUploadRequest {
-  string filename = 1;
+  string filepath = 1;
 }
 
 message FileUploadResponse {
@@ -56,18 +59,24 @@ message FileUploadResponse {
 
 // Request to remove a file
 message FileRemoveRequest {
-  string filename = 1;
+  string filepath = 1;
 }
 
 message FileRemoveResponse {
   bool success = 1;
 }
 
+// Request to edit a file
+message FileEditRequest {
+  string filepath = 1;
+}
+
+message FileEditResponse {
+  bool success = 1;
+}
+
 message HeartbeatRequest {
   string address = 1;             // IP or host:port of the storage server
-//  int64 free_space_bytes = 3;     // Optional: free disk space available
-//  int64 total_space_bytes = 4;    // Optional: total disk space
-//  int64 timestamp = 5;            // Optional: server's current time (UNIX epoch)
 }
 
 message HeartbeatResponse {

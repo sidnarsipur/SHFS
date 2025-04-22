@@ -25,8 +25,8 @@ asio_grpc_protobuf_generate(
         IMPORT_DIRS ${PROTO_IMPORT_DIRS}
         OUT_DIR "${PROTO_BINARY_DIR}"
         PROTOS
-            "${CMAKE_CURRENT_LIST_DIR}/proto/hello.proto"
             "${CMAKE_CURRENT_LIST_DIR}/proto/naming.proto"
+            "${CMAKE_CURRENT_LIST_DIR}/proto/storage.proto"
 )
 
 add_subdirectory(src/common)

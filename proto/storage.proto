@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+// Service for interacting with the storage server.
+service StorageService {
+  // Upload a file (streaming the file data)
+  rpc UploadFile (stream UploadRequest) returns (UploadResponse);
+
+  // Download a file (streaming the file data)
+  rpc DownloadFile (DownloadRequest) returns (stream DownloadResponse);
+}
+
+// Request to upload a file to the storage server.
+message UploadRequest {
+  string file_name = 1;       // The name of the file being uploaded.
+  bytes file_data = 2;        // The actual file data (will be streamed).
+}
+
+// Response from the storage server after uploading a file.
+message UploadResponse {
+  bool success = 1;           // Whether the file upload was successful.
+  string error_message = 2;   // If the upload fails, an error message will be provided.
+}
+
+// Request to download a file from the storage server.
+message DownloadRequest {
+  string file_name = 1;       // The name of the file being requested.
+}
+
+// Response from the storage server with the requested file data.
+message DownloadResponse {
+  bool success = 1;           // Whether the file was successfully retrieved.
+  string error_message = 2;   // Error message if the download fails.
+  bytes file_data = 3;        // The file data being sent back (will be streamed).
+}

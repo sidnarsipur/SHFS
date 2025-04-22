@@ -4,7 +4,7 @@ class StorageServiceImpl final : public StorageService::Service {
 public:
     StorageServiceImpl() = default;
 
-    grpc::Status StorageServiceImpl::UploadFile(
+    grpc::Status UploadFile(
         grpc::ServerContext* context,
         grpc::ServerReader<UploadRequest>* reader,
         UploadResponse* response) override {
@@ -21,7 +21,7 @@ public:
         return grpc::Status::OK;
     }
 
-    grpc::Status StorageServiceImpl::DownloadFile(
+    grpc::Status DownloadFile(
     grpc::ServerContext* context,
     const DownloadRequest* request,
     grpc::ServerWriter<DownloadResponse>* writer) override {

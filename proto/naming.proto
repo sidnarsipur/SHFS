@@ -15,6 +15,9 @@ service NamingService {
 
   // Remove a file from the system.
   rpc RemoveFile(FileRemoveRequest) returns (FileRemoveResponse);
+
+  // Heartbeat to check if the naming server is alive. (It's easier to have a pull model!)
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
 
 // Used when registering a storage server
@@ -58,4 +61,16 @@ message FileRemoveRequest {
 
 message FileRemoveResponse {
   bool success = 1;
+}
+
+message HeartbeatRequest {
+  string address = 1;             // IP or host:port of the storage server
+//  int64 free_space_bytes = 3;     // Optional: free disk space available
+//  int64 total_space_bytes = 4;    // Optional: total disk space
+//  int64 timestamp = 5;            // Optional: server's current time (UNIX epoch)
+}
+
+message HeartbeatResponse {
+  bool success = 1;               // Whether the heartbeat was accepted
+  string message = 2;             // Optional: debugging or error info
 }

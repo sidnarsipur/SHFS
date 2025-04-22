@@ -37,8 +37,6 @@ public:
     }
 
 private:
-
-
     std::shared_mutex mu_; // For thread safety
 
     // Set of registered storage server addresses

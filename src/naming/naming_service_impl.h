@@ -71,6 +71,20 @@ public:
         return grpc::Status::OK;
     }
 
+    grpc::Status Heartbeat(grpc::ServerContext* context,
+                               const HeartbeatRequest* request,
+                               HeartbeatResponse* response) override {
+        std::string addr = request->address();
+        spdlog::info("Received heartbeat from: {}", addr);
+
+        // You could update an internal map of address -> last seen timestamp here
+        // serverState[addr] = std::chrono::steady_clock::now();
+
+        response->set_success(true);
+        response->set_message("Heartbeat received.");
+        return grpc::Status::OK;
+    }
+
 private:
     std::shared_mutex mu_; // For thread safety
 

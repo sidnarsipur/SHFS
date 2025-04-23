@@ -12,11 +12,11 @@ service StorageService {
   rpc RemoveFile(RemoveRequest) returns (RemoveResponse);
 
   //Share files with another storage server when it is initialized
-  rpc ShareFiles(Empty) returns (stream ShareResponse);
+  rpc ShareFiles(EmptyMessage) returns (stream ShareResponse);
 }
 
 // Empty message type
-message Empty {}
+message EmptyMessage {}
 
 // Request to upload a file to the storage server.
 message UploadRequest {

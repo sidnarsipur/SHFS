@@ -15,3 +15,7 @@
     ```
 
 2. Rebuild the `proto-objects` library in CLion
+
+## Tip for Siddart
+
+- To add a new include in the project, add it to the `pch.h` file. This is called a precompiled header and is used to speed up compilation.

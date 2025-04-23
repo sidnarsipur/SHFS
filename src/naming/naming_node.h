@@ -1,6 +1,4 @@
 #pragma once
-#include <utility>
-
 #include "naming_service_impl.h"
 
 class NamingNode {

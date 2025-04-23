@@ -8,7 +8,9 @@ class StorageNode {
         StorageNode(std::string naming_address, std::string storage_address):
             naming_address_(std::move(naming_address)),
             storage_address_(std::move(storage_address)),
-            naming_stub_(naming::NamingService::NewStub(grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))) {}
+            naming_stub_(naming::NamingService::NewStub(grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))),
+            service_(std::move(storage_address))
+            {}
 
         void Register() const {
             naming::RegisterStorageRequest req;
@@ -23,10 +25,10 @@ class StorageNode {
                 std::exit(EXIT_FAILURE);
             }
 
-            spdlog::info("Registered storage server at {}", storage_address_);
+            spdlog::info("Registered Storage Server with Naming Server at {}", storage_address_);
         }
 
-        void SendHeartbeat() const {
+        bool SendHeartbeat() const {
             naming::HeartbeatRequest req;
             naming::HeartbeatResponse res;
             grpc::ClientContext ctx;
@@ -35,9 +37,12 @@ class StorageNode {
             auto status = naming_stub_->Heartbeat(&ctx, req, &res);
 
             if (status.ok()) {
-                spdlog::info("Heartbeat ack: {}", res.error_message());
-            } else {
-                spdlog::warn("Heartbeat failed: {}", status.error_message());
+                spdlog::info("Heartbeat Ack: {}", res.error_message());
+                return true;
+            }
+            else {
+                spdlog::warn("Heartbeat Failed: {}", status.error_message());
+                return false;
             }
         }
 
@@ -51,7 +56,7 @@ class StorageNode {
             builder.RegisterService(&service_);
 
             auto server = builder.BuildAndStart();
-            spdlog::info("Storage server listening on {}", storage_address_);
+            spdlog::info("Storage Server Listening on {}", storage_address_);
             server->Wait();
         }
 

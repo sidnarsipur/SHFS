@@ -6,7 +6,10 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status RegisterStorageServer(grpc::ServerContext *context, const naming::RegisterStorageRequest *request, naming::RegisterStorageResponse *response) override {
             std::unique_lock lock(mu_);
+
             storage_servers_.insert(request->storage_address());
+            spdlog::info("Registered Storage Server with Naming Server");
+
             response->set_success(true);
             return grpc::Status::OK;
         }

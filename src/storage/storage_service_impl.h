@@ -2,18 +2,31 @@
 
 class StorageServiceImpl final : public storage::StorageService::Service {
     public:
-        StorageServiceImpl() = default;
+        explicit StorageServiceImpl(std::string storage_address): storage_address_(std::move(storage_address)) {}
 
         grpc::Status UploadFile(grpc::ServerContext* context, grpc::ServerReader<storage::UploadRequest>* reader, storage::UploadResponse* response) override {
+            std::unique_lock lock(mu_);
+
             // Here we can process the stream of file data from the client
             storage::UploadRequest request;
             while (reader->Read(&request)) {
                 // Process file data (e.g., write to disk or memory)
-                std::cout << "Received file chunk: " << request.filepath() << std::endl;
+                spdlog::info("Received File Chunk: {}", request.filepath());
                 // Append the received chunk to the storage (e.g., file on disk)
+                std::ofstream newFile(request.filepath());
+
+                if(newFile.is_open()){
+                    newFile.write(request.data().c_str(),request.data().size());
+                    spdlog::info("File {} Written to Storage Server", request.filepath());
+
+                    newFile.close();
+                }
+                else {
+                    spdlog::error("File Storage failed");
+                    return grpc::Status::CANCELLED;
+                }
             }
 
-            // After receiving the entire file, return success
             response->set_success(true);
             return grpc::Status::OK;
         }
@@ -31,7 +44,10 @@ class StorageServiceImpl final : public storage::StorageService::Service {
         }
 
     private:
-        std::shared_mutex mu_; // For thread safety
+        std::string storage_address_;
+
+        // For thread safety
+        std::shared_mutex mu_;
 
         // Set of registered storage server addresses
         std::unordered_set<std::string> storage_servers_;

@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     builder.RegisterService(&service);
 
     const auto server = builder.BuildAndStart();
-    spdlog::info("Naming server listening on {}", naming_address_);
+    spdlog::info("Naming Server Listening on {}", naming_address_);
     server->Wait();
     return 0;
 }

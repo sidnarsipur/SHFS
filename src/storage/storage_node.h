@@ -34,7 +34,7 @@ public:
         auto status = naming_stub_->Heartbeat(&ctx, req, &res);
 
         if (status.ok()) {
-            spdlog::info("Heartbeat ack: {}", res.message());
+            spdlog::info("Heartbeat ack: {}", res.error_message());
         } else {
             spdlog::warn("Heartbeat failed: {}", status.error_message());
         }

@@ -2,11 +2,11 @@
 
 inline std::vector<std::string> getStorageServersForFile(NamingService::Stub &stub, const std::string &filename) {
     FileLookupRequest request;
-    request.set_filename(filename);
+//    request.set_filename(filename);
     FileLookupResponse reply;
     grpc::ClientContext context;
 
-    auto status = stub.GetStorageServersForFile(&context, request, &reply);
+    auto status = stub.FindServersWithFile(&context, request, &reply);
     if (!status.ok()) {
         spdlog::error("RPC failed");
         std::exit(EXIT_FAILURE);
@@ -26,7 +26,7 @@ inline void download_file(NamingService::Stub &naming_stub, const std::string &f
         auto storage_stub = StorageService::NewStub(grpc::CreateChannel(address, grpc::InsecureChannelCredentials()));
         grpc::ClientContext context;
         DownloadRequest request;
-        request.set_file_name(filename);
+//        request.set_file_name(filename);
         DownloadResponse response;
 
         std::unique_ptr<grpc::ClientReader<DownloadResponse>> reader = storage_stub->DownloadFile(&context, request);

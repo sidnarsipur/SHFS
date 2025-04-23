@@ -1,67 +1,67 @@
 #pragma once
 
-class NamingServiceImpl final : public NamingService::Service {
+class NamingServiceImpl final : public naming::NamingService::Service {
     public:
         NamingServiceImpl() = default;
 
-        grpc::Status RegisterStorageServer(grpc::ServerContext *context, const RegisterStorageRequest *request, RegisterStorageResponse *response) override {
+        grpc::Status RegisterStorageServer(grpc::ServerContext *context, const naming::RegisterStorageRequest *request, naming::RegisterStorageResponse *response) override {
             std::unique_lock lock(mu_);
             storage_servers_.insert(request->storage_address());
             response->set_success(true);
             return grpc::Status::OK;
         }
 
-        grpc::Status GetStorageServersForFile(grpc::ServerContext *context, const FileLookupRequest *request, FileLookupResponse *response) {
+        grpc::Status FindServersWithFile(grpc::ServerContext *context, const naming::FileLookupRequest *request, naming::FileLookupResponse *response) override {
             std::shared_lock lock(mu_);
             const auto &filepath = request->filepath();
-            if (file_locations_.contains(filepath)) {
-                for (const auto &addr: file_locations_[filepath]) {
-                    response->add_storage_addresses(addr);
+            if (files_.contains(filepath)) {
+                for (const auto& address : storage_servers_) {
+                    response->add_storage_addresses(address);
                 }
             }
             return grpc::Status::OK;
         }
 
-        grpc::Status ListAllFiles(grpc::ServerContext *context, const Empty *request, FileListResponse *response) override {
+        grpc::Status ListFiles(grpc::ServerContext *context, const naming::Empty *request, naming::FileListResponse *response) override {
             std::shared_lock lock(mu_);
-            for (const auto &key: file_locations_ | std::views::keys) {
-                response->add_filepaths(key);
+            for (const auto &file: files_) {
+                response->add_filepaths(file);
             }
             return grpc::Status::OK;
         }
 
-        grpc::Status GetStorageServerForUpload(grpc::ServerContext *context, const FileUploadRequest *request, FileUploadResponse *response) {
+        grpc::Status UploadFile(grpc::ServerContext *context, const naming::FileUploadRequest *request, naming::FileUploadResponse *response) override {
             std::unique_lock lock(mu_);
             if (storage_servers_.empty()) {
-                return grpc::Status(grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered.");
+                return {grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered."};
             }
 
-            // TODO: Add smarter selection strategy (e.g., round-robin, load-based)
-            auto it = storage_servers_.begin();
-            response->set_storage_address(*it);
+            for (const auto& address : storage_servers_) {
+                response->add_storage_addresses(address);
+            }
 
-            // Update internal state
             // TODO: handle updating a file, not just uploading new files
-            file_locations_[request->filepath()].insert(*it);
-
+            files_.insert(request->filepath());
             return grpc::Status::OK;
         }
 
-        grpc::Status RemoveFile(grpc::ServerContext *context, const FileRemoveRequest *request, FileRemoveResponse *response) override {
+        grpc::Status RemoveFile(grpc::ServerContext *context, const naming::FileRemoveRequest *request, naming::FileRemoveResponse *response) override {
             std::unique_lock lock(mu_);
             const auto &filename = request->filepath();
-            const auto it = file_locations_.find(filename);
-            if (it != file_locations_.end()) {
-                file_locations_.erase(it);
-                // TODO: Inform storage servers to delete file (distributed implementation)
-                response->set_success(true);
-            } else {
-                response->set_success(false);
+            if (filename.empty()) {
+                return {grpc::StatusCode::INVALID_ARGUMENT, "File name cannot be empty."};
             }
+
+            if (!files_.contains(filename)) {
+                return {grpc::StatusCode::NOT_FOUND, "File not found."};
+            }
+
+            // TODO: handle removing a file from storage servers. What happens if some servers fail to remove the file?
+            files_.erase(filename);
             return grpc::Status::OK;
         }
 
-        grpc::Status Heartbeat(grpc::ServerContext* context, const HeartbeatRequest* request, HeartbeatResponse* response) override {
+        grpc::Status Heartbeat(grpc::ServerContext* context, const naming::HeartbeatRequest* request, naming::HeartbeatResponse* response) override {
             std::string addr = request->address();
             spdlog::info("Received heartbeat from: {}", addr);
 
@@ -69,16 +69,12 @@ class NamingServiceImpl final : public NamingService::Service {
             // serverState[addr] = std::chrono::steady_clock::now();
 
             response->set_success(true);
-            response->set_message("Heartbeat received.");
+            // response->set_error_message("Heartbeat received.");
             return grpc::Status::OK;
         }
 
     private:
-        std::shared_mutex mu_; // For thread safety
-
-        // Set of registered storage server addresses
+        std::shared_mutex mu_;
         std::unordered_set<std::string> storage_servers_;
-
-        // Map from filepaths to the set of storage servers that store them
-        std::unordered_map<std::string, std::unordered_set<std::string>> file_locations_;
+        std::unordered_set<std::string> files_;
 };

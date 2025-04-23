@@ -6,6 +6,7 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status RegisterStorageServer(grpc::ServerContext *context, const naming::RegisterStorageRequest *request, naming::RegisterStorageResponse *response) override {
             std::unique_lock lock(mu_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
 
             storage_servers_.insert(request->storage_address());
             spdlog::info("Registered Storage Server with Naming Server");
@@ -16,6 +17,8 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status FindServersWithFile(grpc::ServerContext *context, const naming::FileLookupRequest *request, naming::FileLookupResponse *response) override {
             std::shared_lock lock(mu_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+
             const auto &filepath = request->filepath();
             if (files_.contains(filepath)) {
                 for (const auto& address : storage_servers_) {
@@ -27,6 +30,8 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status ListFiles(grpc::ServerContext *context, const naming::Empty *request, naming::FileListResponse *response) override {
             std::shared_lock lock(mu_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+
             for (const auto &file: files_) {
                 response->add_filepaths(file);
             }
@@ -35,6 +40,8 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status UploadFile(grpc::ServerContext *context, const naming::FileUploadRequest *request, naming::FileUploadResponse *response) override {
             std::unique_lock lock(mu_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+
             if (storage_servers_.empty()) {
                 return {grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered."};
             }
@@ -50,6 +57,8 @@ class NamingServiceImpl final : public naming::NamingService::Service {
 
         grpc::Status RemoveFile(grpc::ServerContext *context, const naming::FileRemoveRequest *request, naming::FileRemoveResponse *response) override {
             std::unique_lock lock(mu_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+
             const auto &filename = request->filepath();
             if (filename.empty()) {
                 return {grpc::StatusCode::INVALID_ARGUMENT, "File name cannot be empty."};
@@ -77,6 +86,7 @@ class NamingServiceImpl final : public naming::NamingService::Service {
         }
 
     private:
+        int delay_ = 5000;
         std::shared_mutex mu_;
         std::unordered_set<std::string> storage_servers_;
         std::unordered_set<std::string> files_;

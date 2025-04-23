@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package naming;
+
 service NamingService {
   // Register a new storage server with the naming server.
   rpc RegisterStorageServer(RegisterStorageRequest) returns (RegisterStorageResponse);

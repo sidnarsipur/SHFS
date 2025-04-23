@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package storage;
+
 // Service for interacting with the storage server.
 service StorageService {
   // Upload a file (streaming the file data)

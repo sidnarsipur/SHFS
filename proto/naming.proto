@@ -5,19 +5,16 @@ service NamingService {
   rpc RegisterStorageServer(RegisterStorageRequest) returns (RegisterStorageResponse);
 
   // Get list of storage servers that have a specific file.
-  rpc GetStorageServerFileState(FileLookupRequest) returns (FileLookupResponse);
+  rpc FindServersWithFile(FileLookupRequest) returns (FileLookupResponse);
 
   // List all files known to the naming server.
-  rpc ListAllFiles(Empty) returns (FileListResponse);
+  rpc ListFiles(Empty) returns (FileListResponse);
 
   // Create a file on the system.
-  rpc CreateFile(FileUploadRequest) returns (FileUploadResponse);
+  rpc UploadFile(FileUploadRequest) returns (FileUploadResponse);
 
   // Remove a file from the system.
   rpc RemoveFile(FileRemoveRequest) returns (FileRemoveResponse);
-
-  // Edit a file on the system.
-  rpc EditFile(FileEditRequest) returns (FileEditResponse);
 
   // Heartbeat to check if the naming server is alive. (It's easier to have a pull model!)
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
@@ -30,6 +27,8 @@ message RegisterStorageRequest {
 
 message RegisterStorageResponse {
   bool success = 1;
+  string error_message = 2;
+  string storage_address = 3;
 }
 
 // Request to get all storage servers that store the file
@@ -54,7 +53,7 @@ message FileUploadRequest {
 }
 
 message FileUploadResponse {
-  string storage_address = 1; // The selected storage server for uploading
+  repeated string storage_addresses = 1; // The list of storage servers that is returned to client
 }
 
 // Request to remove a file
@@ -64,15 +63,7 @@ message FileRemoveRequest {
 
 message FileRemoveResponse {
   bool success = 1;
-}
-
-// Request to edit a file
-message FileEditRequest {
-  string filepath = 1;
-}
-
-message FileEditResponse {
-  bool success = 1;
+  string error_message = 2;
 }
 
 message HeartbeatRequest {
@@ -81,5 +72,5 @@ message HeartbeatRequest {
 
 message HeartbeatResponse {
   bool success = 1;               // Whether the heartbeat was accepted
-  string message = 2;             // Optional: debugging or error info
+  string error_message = 2;             // Optional: debugging or error info
 }

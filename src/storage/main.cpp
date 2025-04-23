@@ -9,5 +9,6 @@ int main(int argc, char** argv) {
     StorageNode node(naming_addr, storage_addr);
     node.Register();
     node.Run();
+
     return 0;
 }

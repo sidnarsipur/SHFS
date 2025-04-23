@@ -1,12 +1,12 @@
 #pragma once
 
-class StorageServiceImpl final : public StorageService::Service {
+class StorageServiceImpl final : public storage::StorageService::Service {
     public:
         StorageServiceImpl() = default;
 
-        grpc::Status UploadFile(grpc::ServerContext* context, grpc::ServerReader<UploadRequest>* reader, UploadResponse* response) override {
+        grpc::Status UploadFile(grpc::ServerContext* context, grpc::ServerReader<storage::UploadRequest>* reader, storage::UploadResponse* response) override {
             // Here we can process the stream of file data from the client
-            UploadRequest request;
+            storage::UploadRequest request;
             while (reader->Read(&request)) {
                 // Process file data (e.g., write to disk or memory)
                 std::cout << "Received file chunk: " << request.filepath() << std::endl;
@@ -18,12 +18,12 @@ class StorageServiceImpl final : public StorageService::Service {
             return grpc::Status::OK;
         }
 
-        grpc::Status DownloadFile(grpc::ServerContext* context, const DownloadRequest* request, grpc::ServerWriter<DownloadResponse>* writer) override {
+        grpc::Status DownloadFile(grpc::ServerContext* context, const storage::DownloadRequest* request, grpc::ServerWriter<storage::DownloadResponse>* writer) override {
             // Retrieve the file data from storage
     //        std::string file_data = GetFileData(request->filepath());
 
             // Stream the file data to the client in chunks
-            DownloadResponse response;
+            storage::DownloadResponse response;
 //            response.set_file_data(file_data);  // You can chunk the data into smaller pieces if necessary
             writer->Write(response);
 

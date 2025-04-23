@@ -9,17 +9,10 @@ GRPC localhost:6000/NamingService/ListAllFiles
 Key: Value
 
 ###
-GRPC localhost:6000/NamingService/GetStorageServerForUpload
+GRPC localhost:6000/NamingService/EditFile
 
 {
-  "filename": "woah"
-}
-
-###
-GRPC localhost:6000/NamingService/GetStorageServersForFile
-
-{
-  "filename": "woah"
+  "filepath": "woah"
 }
 
 ###

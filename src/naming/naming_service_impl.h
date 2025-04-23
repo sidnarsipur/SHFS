@@ -15,11 +15,11 @@ public:
 
     grpc::Status GetStorageServersForFile(grpc::ServerContext *context,
                                           const FileLookupRequest *request,
-                                          FileLookupResponse *response) override {
+                                          FileLookupResponse *response) {
         std::shared_lock lock(mu_);
-        const auto &filename = request->filename();
-        if (file_locations_.contains(filename)) {
-            for (const auto &addr: file_locations_[filename]) {
+        const auto &filepath = request->filepath();
+        if (file_locations_.contains(filepath)) {
+            for (const auto &addr: file_locations_[filepath]) {
                 response->add_storage_addresses(addr);
             }
         }
@@ -31,14 +31,14 @@ public:
                               FileListResponse *response) override {
         std::shared_lock lock(mu_);
         for (const auto &key: file_locations_ | std::views::keys) {
-            response->add_filenames(key);
+            response->add_filepaths(key);
         }
         return grpc::Status::OK;
     }
 
     grpc::Status GetStorageServerForUpload(grpc::ServerContext *context,
                                            const FileUploadRequest *request,
-                                           FileUploadResponse *response) override {
+                                           FileUploadResponse *response) {
         std::unique_lock lock(mu_);
         if (storage_servers_.empty()) {
             return grpc::Status(grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered.");
@@ -50,7 +50,7 @@ public:
 
         // Update internal state
         // TODO: handle updating a file, not just uploading new files
-        file_locations_[request->filename()].insert(*it);
+        file_locations_[request->filepath()].insert(*it);
 
         return grpc::Status::OK;
     }
@@ -59,7 +59,7 @@ public:
                             const FileRemoveRequest *request,
                             FileRemoveResponse *response) override {
         std::unique_lock lock(mu_);
-        const auto &filename = request->filename();
+        const auto &filename = request->filepath();
         const auto it = file_locations_.find(filename);
         if (it != file_locations_.end()) {
             file_locations_.erase(it);
@@ -91,6 +91,6 @@ private:
     // Set of registered storage server addresses
     std::unordered_set<std::string> storage_servers_;
 
-    // Map from filenames to the set of storage servers that store them
+    // Map from filepaths to the set of storage servers that store them
     std::unordered_map<std::string, std::unordered_set<std::string>> file_locations_;
 };

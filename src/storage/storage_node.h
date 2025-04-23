@@ -25,7 +25,7 @@ class StorageNode {
                 std::exit(EXIT_FAILURE);
             }
 
-            spdlog::info("Registered Storage Server with Naming Server at {}", storage_address_);
+            spdlog::info("Registered Storage Server",storage_address_ );
         }
 
         bool SendHeartbeat() const {

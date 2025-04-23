@@ -8,7 +8,7 @@ class NamingServiceImpl final : public naming::NamingService::Service {
             std::unique_lock lock(mu_);
 
             storage_servers_.insert(request->storage_address());
-            spdlog::info("Registered Storage Server with Naming Server");
+            spdlog::info("Registered Storage Server: {}", request->storage_address());
 
             response->set_success(true);
             return grpc::Status::OK;

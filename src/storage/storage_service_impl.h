@@ -37,7 +37,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             std::ifstream file("data/" + request->filepath(), std::ios::binary);
             storage::DownloadResponse res;
 
-            spdlog::info("Received Download Request for file {}", request.filepath());
+            spdlog::info("Received Download Request for file {}", request->filepath());
 
             if(!file.is_open()){
                 spdlog::error("Failed to Download File: {}", request->filepath());
@@ -56,7 +56,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
 
             writer->Write(res);
 
-            spdlog::info("Finish Download Request for file {}", request.filepath());
+            spdlog::info("Finish Download Request for file {}", request->filepath());
 
             return grpc::Status::OK;
         }

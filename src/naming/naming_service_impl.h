@@ -32,8 +32,8 @@ public:
             return {grpc::StatusCode::NOT_FOUND, "File not found."};
         }
 
-        dm->active_servers().read([&](const auto &s) {
-            for (const auto &address: s) {
+        dm->files().read([&](const auto &m) {
+            for (const auto &address: m.at(filepath)) {
                 response->add_storage_addresses(address);
             }
         });

@@ -25,6 +25,12 @@ public:
         return data_;
     }
 
+    T set(const T& value) {
+        std::unique_lock lock(mu_);
+        data_ = value;
+        return data_;
+    }
+
 private:
     mutable std::shared_mutex mu_;
     T data_;

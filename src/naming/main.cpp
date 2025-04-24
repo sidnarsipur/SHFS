@@ -3,6 +3,8 @@
 #include "heartbeat_monitor.h"
 #include "naming_service_impl.h"
 
+
+
 int main(int argc, char **argv) {
     const std::string port = (argc > 1 ? argv[1] : "6000");
     const std::string naming_address_ = "localhost:" + port;
@@ -12,7 +14,9 @@ int main(int argc, char **argv) {
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
     auto manager = std::make_shared<NamingDataManager>();
-    HeartbeatMonitor monitor(manager, 5, 10);
+    HeartbeatMonitor monitor(manager, 5, 60);
+    // monitor.test_basic_single_source();
+    // monitor.test_multiple_sources();
     NamingServiceImpl service(manager);
 
     grpc::ServerBuilder builder;

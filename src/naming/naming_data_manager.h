@@ -1,5 +1,14 @@
 #pragma once
 
+struct Task {
+    std::string source;
+    std::string filepath;
+
+    bool operator==(const Task& other) const {
+        return source == other.source && filepath == other.filepath;
+    }
+};
+
 class NamingDataManager {
 public:
     NamingDataManager() = default;
@@ -9,11 +18,15 @@ public:
     ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> &server_state() {
         return server_state_;
     }
+    ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> &replication_tasks() { return replication_tasks_; }
 
     const ThreadSafe<std::unordered_set<std::string>> &active_servers() const { return active_servers_; }
     const ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>>  &files() const { return files_; }
     const ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> &server_state() const {
         return server_state_;
+    }
+    const ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> &replication_tasks() const {
+        return replication_tasks_;
     }
 
     void updateHeartbeat(const std::string &address) {
@@ -55,6 +68,17 @@ public:
             }
         });
 
+        // Log replication tasks
+        oss << "Replication Tasks:\n";
+        replication_tasks_.read([&](const auto &tasks) {
+            for (const auto &[file, task_list] : tasks) {
+                oss << "  - " << file << "\n";
+                for (const auto &task : task_list) {
+                    oss << "    - " << task.source << " -> " << task.filepath << "\n";
+                }
+            }
+        });
+
         spdlog::info(oss.str());
     }
 
@@ -62,4 +86,5 @@ private:
     ThreadSafe<std::unordered_set<std::string>> active_servers_;
     ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>> files_;
     ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> server_state_;
+    ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> replication_tasks_;
 };

@@ -20,6 +20,8 @@ service NamingService {
 
   // Heartbeat to check if the naming server is alive. (It's easier to have a pull model!)
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+
+  rpc Log(Empty) returns (Empty);
 }
 
 // Used when registering a storage server

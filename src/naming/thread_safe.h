@@ -19,6 +19,12 @@ public:
         return fn(data_);
     }
 
+    // returns a copy of the data (snapshot)
+    T get() const {
+        std::shared_lock lock(mu_);
+        return data_;
+    }
+
 private:
     mutable std::shared_mutex mu_;
     T data_;

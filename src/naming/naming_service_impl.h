@@ -48,7 +48,7 @@ public:
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
         dm->files().read([&](const auto &s) {
-            for (const auto &file: s) {
+            for (const auto &file: s | std::views::keys) {
                 response->add_filepaths(file);
             }
         });
@@ -61,19 +61,21 @@ public:
         naming::FileUploadResponse *response
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        auto active_servers = dm->active_servers().get();
 
-        if (dm->active_servers().read([&](const auto &s) { return s.empty(); })) {
+        if (active_servers.empty()) {
             return {grpc::StatusCode::FAILED_PRECONDITION, "No active storage server."};
         }
 
-        dm->active_servers().read([&](const auto &s) {
-            for (const auto &address: s) {
-                response->add_storage_addresses(address);
-            }
-        });
+        for (const auto &address: active_servers) {
+            response->add_storage_addresses(address);
+        }
 
         // TODO: handle updating a file, not just uploading new files
-        dm->files().write([&](auto &s) { s.insert(request->filepath()); });
+        const auto &filename = request->filepath();
+        for (const auto &address: active_servers) {
+            dm->addServerForFile(filename, address);
+        }
         return grpc::Status::OK;
     }
 
@@ -109,6 +111,11 @@ public:
         dm->updateHeartbeat(request->address());
 
         response->set_success(true);
+        return grpc::Status::OK;
+    }
+
+    grpc::Status Log(grpc::ServerContext *context, const naming::Empty *request, naming::Empty *response) override {
+        dm->log();
         return grpc::Status::OK;
     }
 

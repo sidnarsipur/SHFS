@@ -8,7 +8,6 @@ public:
     void Start() {
         thread_ = std::thread([this] {
             while (!stop_flag_.load()) {
-                spdlog::info("Checking server status...");
                 std::vector<std::string> down_servers;
                 dm->server_state().read([&](const auto &m) {
                     for (const auto &[addr, time]: m) {
@@ -22,12 +21,6 @@ public:
                     spdlog::info("Server {} is down", addr);
                     dm->active_servers().write([&](auto &s) { s.erase(addr); });
                 }
-
-                dm->active_servers().read([&](const auto &s) {
-                    for (const auto &address: s) {
-                        spdlog::info("Active server: {}", address);
-                    }
-                });
                 std::this_thread::sleep_for(std::chrono::seconds(interval_));
             }
         });

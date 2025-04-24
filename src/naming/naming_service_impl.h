@@ -1,93 +1,119 @@
 #pragma once
 
 class NamingServiceImpl final : public naming::NamingService::Service {
-    public:
-        NamingServiceImpl() = default;
+public:
+    explicit NamingServiceImpl(std::shared_ptr<DataManager> manager, int delay = 1)
+        : dm(std::move(manager)), delay_(delay) {}
 
-        grpc::Status RegisterStorageServer(grpc::ServerContext *context, const naming::RegisterStorageRequest *request, naming::RegisterStorageResponse *response) override {
-            std::unique_lock lock(mu_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+    grpc::Status RegisterStorageServer(
+        grpc::ServerContext *context,
+        const naming::RegisterStorageRequest *request,
+        naming::RegisterStorageResponse *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
-            storage_servers_.insert(request->storage_address());
-            spdlog::info("Registered Storage Server with Naming Server");
+        dm->active_servers().set([&](auto &s) { s.insert(request->storage_address()); });
+        spdlog::info("Registered Storage Server with Naming Server");
 
-            response->set_success(true);
-            return grpc::Status::OK;
+        response->set_success(true);
+        return grpc::Status::OK;
+    }
+
+    grpc::Status FindServersWithFile(
+        grpc::ServerContext *context,
+        const naming::FileLookupRequest *request,
+        naming::FileLookupResponse *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+
+        const auto &filepath = request->filepath();
+        if (!dm->files().get([&](const auto &s) { return s.contains(filepath); })) {
+            return {grpc::StatusCode::NOT_FOUND, "File not found."};
         }
 
-        grpc::Status FindServersWithFile(grpc::ServerContext *context, const naming::FileLookupRequest *request, naming::FileLookupResponse *response) override {
-            std::shared_lock lock(mu_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
-
-            const auto &filepath = request->filepath();
-            if (files_.contains(filepath)) {
-                for (const auto& address : storage_servers_) {
-                    response->add_storage_addresses(address);
-                }
-            }
-            return grpc::Status::OK;
-        }
-
-        grpc::Status ListFiles(grpc::ServerContext *context, const naming::Empty *request, naming::FileListResponse *response) override {
-            std::shared_lock lock(mu_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
-
-            for (const auto &file: files_) {
-                response->add_filepaths(file);
-            }
-            return grpc::Status::OK;
-        }
-
-        grpc::Status UploadFile(grpc::ServerContext *context, const naming::FileUploadRequest *request, naming::FileUploadResponse *response) override {
-            std::unique_lock lock(mu_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
-
-            if (storage_servers_.empty()) {
-                return {grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered."};
-            }
-
-            for (const auto& address : storage_servers_) {
+        dm->active_servers().get([&](const auto &s) {
+            for (const auto &address: s) {
                 response->add_storage_addresses(address);
             }
+        });
+        return grpc::Status::OK;
+    }
 
-            // TODO: handle updating a file, not just uploading new files
-            files_.insert(request->filepath());
-            return grpc::Status::OK;
-        }
+    grpc::Status ListFiles(
+        grpc::ServerContext *context,
+        const naming::Empty *request,
+        naming::FileListResponse *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
-        grpc::Status RemoveFile(grpc::ServerContext *context, const naming::FileRemoveRequest *request, naming::FileRemoveResponse *response) override {
-            std::unique_lock lock(mu_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
-
-            const auto &filename = request->filepath();
-            if (filename.empty()) {
-                return {grpc::StatusCode::INVALID_ARGUMENT, "File name cannot be empty."};
+        dm->files().get([&](const auto &s) {
+            for (const auto &file: s) {
+                response->add_filepaths(file);
             }
+        });
+        return grpc::Status::OK;
+    }
 
-            if (!files_.contains(filename)) {
-                return {grpc::StatusCode::NOT_FOUND, "File not found."};
+    grpc::Status UploadFile(
+        grpc::ServerContext *context,
+        const naming::FileUploadRequest *request,
+        naming::FileUploadResponse *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+
+        if (dm->active_servers().get([&](const auto &s) { return s.empty(); })) {
+            return {grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered."};
+        }
+
+        dm->active_servers().get([&](const auto &s) {
+            for (const auto &address: s) {
+                response->add_storage_addresses(address);
             }
+        });
 
-            // TODO: handle removing a file from storage servers. What happens if some servers fail to remove the file?
-            files_.erase(filename);
-            return grpc::Status::OK;
+        // TODO: handle updating a file, not just uploading new files
+        dm->files().set([&](auto &s) { s.insert(request->filepath()); });
+        return grpc::Status::OK;
+    }
+
+    grpc::Status RemoveFile(
+        grpc::ServerContext *context,
+        const naming::FileRemoveRequest *request,
+        naming::FileRemoveResponse *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+
+        const auto &filename = request->filepath();
+        if (filename.empty()) {
+            return {grpc::StatusCode::INVALID_ARGUMENT, "File name cannot be empty."};
         }
 
-        grpc::Status Heartbeat(grpc::ServerContext* context, const naming::HeartbeatRequest* request, naming::HeartbeatResponse* response) override {
-            std::string addr = request->address();
-            spdlog::info("Received heartbeat from: {}", addr);
-
-            // You could update an internal map of address -> last seen timestamp here
-            // serverState[addr] = std::chrono::steady_clock::now();
-
-            response->set_success(true);
-            // response->set_error_message("Heartbeat received.");
-            return grpc::Status::OK;
+        if (!dm->files().get([&](const auto &s) { return s.contains(filename); })) {
+            return {grpc::StatusCode::NOT_FOUND, "File not found in storage servers."};
         }
 
-    private:
-        int delay_ = 5000;
-        std::shared_mutex mu_;
-        std::unordered_set<std::string> storage_servers_;
-        std::unordered_set<std::string> files_;
+        // TODO: handle removing a file from storage servers. What happens if some servers fail to remove the file?
+        dm->files().set([&](auto &s) { s.erase(filename); });
+        return grpc::Status::OK;
+    }
+
+    grpc::Status Heartbeat(
+        grpc::ServerContext *context,
+        const naming::HeartbeatRequest *request,
+        naming::HeartbeatResponse *response
+    ) override {
+        std::string addr = request->address();
+        spdlog::info("Received heartbeat from: {}", addr);
+
+        dm->server_state().set([&](auto &m) {
+            m[addr] = std::chrono::steady_clock::now();
+        });
+
+        response->set_success(true);
+        return grpc::Status::OK;
+    }
+
+private:
+    int delay_;
+    std::shared_ptr<DataManager> dm;
 };

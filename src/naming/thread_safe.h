@@ -8,13 +8,13 @@ public:
     explicit ThreadSafe(T&& value) : data_(std::move(value)) {} // efficient move
 
     template <typename Func>
-    auto get(Func&& fn) const {
+    auto read(Func&& fn) const {
         std::shared_lock lock(mu_);
         return fn(data_);
     }
 
     template <typename Func>
-    auto set(Func&& fn) {
+    auto write(Func&& fn) {
         std::unique_lock lock(mu_);
         return fn(data_);
     }

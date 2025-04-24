@@ -2,7 +2,7 @@
 
 class NamingServiceImpl final : public naming::NamingService::Service {
 public:
-    explicit NamingServiceImpl(std::shared_ptr<DataManager> manager, int delay = 1)
+    explicit NamingServiceImpl(std::shared_ptr<DataManager> manager, const int delay = 1)
         : dm(std::move(manager)), delay_(delay) {}
 
     grpc::Status RegisterStorageServer(
@@ -12,7 +12,8 @@ public:
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
-        dm->active_servers().set([&](auto &s) { s.insert(request->storage_address()); });
+        dm->updateHeartbeat(request->storage_address());
+        dm->active_servers().write([&](auto &s) { s.insert(request->storage_address()); });
         spdlog::info("Registered Storage Server with Naming Server");
 
         response->set_success(true);
@@ -27,11 +28,11 @@ public:
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
         const auto &filepath = request->filepath();
-        if (!dm->files().get([&](const auto &s) { return s.contains(filepath); })) {
+        if (!dm->files().read([&](const auto &s) { return s.contains(filepath); })) {
             return {grpc::StatusCode::NOT_FOUND, "File not found."};
         }
 
-        dm->active_servers().get([&](const auto &s) {
+        dm->active_servers().read([&](const auto &s) {
             for (const auto &address: s) {
                 response->add_storage_addresses(address);
             }
@@ -46,7 +47,7 @@ public:
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
-        dm->files().get([&](const auto &s) {
+        dm->files().read([&](const auto &s) {
             for (const auto &file: s) {
                 response->add_filepaths(file);
             }
@@ -61,18 +62,18 @@ public:
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(delay_));
 
-        if (dm->active_servers().get([&](const auto &s) { return s.empty(); })) {
-            return {grpc::StatusCode::FAILED_PRECONDITION, "No storage servers registered."};
+        if (dm->active_servers().read([&](const auto &s) { return s.empty(); })) {
+            return {grpc::StatusCode::FAILED_PRECONDITION, "No active storage server."};
         }
 
-        dm->active_servers().get([&](const auto &s) {
+        dm->active_servers().read([&](const auto &s) {
             for (const auto &address: s) {
                 response->add_storage_addresses(address);
             }
         });
 
         // TODO: handle updating a file, not just uploading new files
-        dm->files().set([&](auto &s) { s.insert(request->filepath()); });
+        dm->files().write([&](auto &s) { s.insert(request->filepath()); });
         return grpc::Status::OK;
     }
 
@@ -88,12 +89,12 @@ public:
             return {grpc::StatusCode::INVALID_ARGUMENT, "File name cannot be empty."};
         }
 
-        if (!dm->files().get([&](const auto &s) { return s.contains(filename); })) {
+        if (!dm->files().read([&](const auto &s) { return s.contains(filename); })) {
             return {grpc::StatusCode::NOT_FOUND, "File not found in storage servers."};
         }
 
         // TODO: handle removing a file from storage servers. What happens if some servers fail to remove the file?
-        dm->files().set([&](auto &s) { s.erase(filename); });
+        dm->files().write([&](auto &s) { s.erase(filename); });
         return grpc::Status::OK;
     }
 
@@ -105,15 +106,13 @@ public:
         std::string addr = request->address();
         spdlog::info("Received heartbeat from: {}", addr);
 
-        dm->server_state().set([&](auto &m) {
-            m[addr] = std::chrono::steady_clock::now();
-        });
+        dm->updateHeartbeat(request->address());
 
         response->set_success(true);
         return grpc::Status::OK;
     }
 
 private:
-    int delay_;
     std::shared_ptr<DataManager> dm;
+    int delay_;
 };

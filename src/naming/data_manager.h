@@ -16,8 +16,11 @@ public:
         return server_state_;
     }
 
+    void updateHeartbeat(const std::string &address) {
+        server_state_.write([&](auto &m) { m[address] = std::chrono::steady_clock::now(); });
+    }
+
 private:
-    std::shared_mutex mu_;
     ThreadSafe<std::unordered_set<std::string>> active_servers_;
     ThreadSafe<std::unordered_set<std::string>> files_;
     ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> server_state_;

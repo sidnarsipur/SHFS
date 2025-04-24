@@ -10,7 +10,7 @@ public:
             while (!stop_flag_.load()) {
                 spdlog::info("Checking server status...");
                 std::vector<std::string> down_servers;
-                dm->server_state().get([&](const auto &m) {
+                dm->server_state().read([&](const auto &m) {
                     for (const auto &[addr, time]: m) {
                         if (std::chrono::steady_clock::now() - time > std::chrono::seconds(timeout_)) {
                             down_servers.push_back(addr);
@@ -20,8 +20,14 @@ public:
 
                 for (const auto &addr: down_servers) {
                     spdlog::info("Server {} is down", addr);
-                    dm->active_servers().set([&](auto &s) { s.erase(addr); });
+                    dm->active_servers().write([&](auto &s) { s.erase(addr); });
                 }
+
+                dm->active_servers().read([&](const auto &s) {
+                    for (const auto &address: s) {
+                        spdlog::info("Active server: {}", address);
+                    }
+                });
                 std::this_thread::sleep_for(std::chrono::seconds(interval_));
             }
         });

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "data_manager.h"
+#include "naming_data_manager.h"
 #include "heartbeat_monitor.h"
 #include "naming_service_impl.h"
 
@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
-    auto manager = std::make_shared<DataManager>();
+    auto manager = std::make_shared<NamingDataManager>();
     HeartbeatMonitor monitor(manager, 5, 10);
     NamingServiceImpl service(manager);
 

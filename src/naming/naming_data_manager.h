@@ -1,8 +1,8 @@
 #pragma once
 
-class DataManager {
+class NamingDataManager {
 public:
-    DataManager() = default;
+    NamingDataManager() = default;
 
     ThreadSafe<std::unordered_set<std::string>> &active_servers() { return active_servers_; }
     ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>>  &files() { return files_; }

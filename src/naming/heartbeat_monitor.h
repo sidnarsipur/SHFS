@@ -2,7 +2,7 @@
 
 class HeartbeatMonitor {
 public:
-    explicit HeartbeatMonitor(std::shared_ptr<DataManager> manager, const int interval, const int timeout)
+    explicit HeartbeatMonitor(std::shared_ptr<NamingDataManager> manager, const int interval, const int timeout)
         : dm(std::move(manager)), interval_(interval), timeout_(timeout), stop_flag_(false) {}
 
     void Start() {
@@ -34,7 +34,7 @@ public:
     }
 
 private:
-    std::shared_ptr<DataManager> dm;
+    std::shared_ptr<NamingDataManager> dm;
     int interval_;
     int timeout_;
     std::atomic<bool> stop_flag_;

@@ -2,7 +2,9 @@
 
 class StorageServiceImpl final : public storage::StorageService::Service {
     public:
-        explicit StorageServiceImpl(std::string storage_address): storage_address_(std::move(storage_address)) {
+        explicit StorageServiceImpl(std::string storage_address, std::shared_ptr<StorageDataManager> manager)
+        : storage_address_(std::move(storage_address)), sdm(std::move(manager))
+        {
             std::filesystem::create_directories("data");
         }
 
@@ -63,13 +65,6 @@ class StorageServiceImpl final : public storage::StorageService::Service {
 
     private:
         std::string storage_address_;
-
-        // For thread safety
         std::shared_mutex mu_;
-
-        // Set of registered storage server addresses
-        std::unordered_set<std::string> storage_servers_;
-
-        // Map from filenames to the set of storage servers that store them
-        std::unordered_map<std::string, std::unordered_set<std::string>> file_locations_;
+        std::shared_ptr<StorageDataManager> sdm;
 };

@@ -9,7 +9,7 @@ class StorageNode {
             naming_address_(std::move(naming_address)),
             storage_address_(std::move(storage_address)),
             naming_stub_(naming::NamingService::NewStub(grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))),
-            service_(std::move(storage_address))
+            service_(std::move(storage_address), std::make_shared<StorageDataManager>())
             {}
 
         void Register() const {

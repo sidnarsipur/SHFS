@@ -8,7 +8,11 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             std::filesystem::create_directories("data");
         }
 
-        grpc::Status UploadFile(grpc::ServerContext* context, grpc::ServerReader<storage::UploadRequest>* reader, storage::UploadResponse* response) override {
+        grpc::Status UploadFile(
+                grpc::ServerContext* context,
+                grpc::ServerReader<storage::UploadRequest>* reader,
+                storage::UploadResponse* response)
+                override {
             std::unique_lock lock(mu_);
 
             // Here we can process the stream of file data from the client
@@ -21,6 +25,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
 
                 if(newFile.is_open()){
                     newFile.write(request.data().c_str(),request.data().size());
+                    sdm->addFile(request.filepath());
                     spdlog::info("Finish Upload Request for file {}", request.filepath());
 
                     newFile.close();
@@ -35,7 +40,13 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             return grpc::Status::OK;
         }
 
-        grpc::Status DownloadFile(grpc::ServerContext* context, const storage::DownloadRequest* request, grpc::ServerWriter<storage::DownloadResponse>* writer) override {
+        grpc::Status DownloadFile(
+                grpc::ServerContext* context,
+                const storage::DownloadRequest* request,
+                grpc::ServerWriter<storage::DownloadResponse>* writer)
+                override {
+            std::unique_lock lock(mu_);
+
             std::ifstream file("data/" + request->filepath(), std::ios::binary);
             storage::DownloadResponse res;
 
@@ -61,6 +72,38 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             spdlog::info("Finish Download Request for file {}", request->filepath());
 
             return grpc::Status::OK;
+        }
+
+        grpc::Status RemoveFile(
+                grpc::ServerContext* context,
+                const ::storage::RemoveRequest* request,
+                storage::RemoveResponse* response)
+                override {
+            std::unique_lock lock(mu_);
+
+            if(!sdm->fileExists(request->filepath())){
+                response->set_success(false);
+                response->set_error_message("File does not exist");
+
+                return grpc::Status::CANCELLED;
+            }
+
+            try{
+                std::filesystem::remove("data/" + request->filepath());
+            } catch (const std::filesystem::filesystem_error& e){
+                response->set_success(false);
+                response->set_error_message("Error removing file");
+
+                return grpc::Status::CANCELLED;
+            }
+
+            sdm->removeFile(request->filepath());
+
+            response->set_success(true);
+            spdlog::info("Removed file {}", request->filepath());
+
+            return grpc::Status::OK;
+
         }
 
     private:

@@ -14,7 +14,7 @@ public:
 
         dm->updateHeartbeat(request->storage_address());
         dm->active_servers().write([&](auto &s) { s.insert(request->storage_address()); });
-        spdlog::info("Registered Storage Server with Naming Server");
+        spdlog::info("Registered Storage Server {}", request->storage_address());
 
         response->set_success(true);
         return grpc::Status::OK;

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "storage_node.h"
+#include "storage_data_manager.h"
 
 int main(int argc, char** argv) {
     std::string port = (argc > 1 ? argv[1] : "7000");

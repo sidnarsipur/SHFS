@@ -21,6 +21,13 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 spdlog::info("Received Upload Request for file {}", request.filepath());
                 std::ofstream newFile("data/" + request.filepath());
 
+                if(sdm->fileExists(request.filepath())){
+                    response->set_success(false);
+                    response->set_error_message("File does not exist");
+
+                    return grpc::Status::CANCELLED;
+                }
+
                 if(newFile.is_open()){
                     newFile.write(request.data().c_str(),request.data().size());
                     sdm->addFile(request.filepath());
@@ -30,6 +37,8 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 }
                 else {
                     spdlog::error("File Storage failed");
+                    response->set_error_message("File Storage failed");
+
                     return grpc::Status::CANCELLED;
                 }
             }
@@ -92,6 +101,8 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 std::filesystem::remove("data/" + request->filepath());
             } catch (const std::filesystem::filesystem_error& e){
                 response->set_success(false);
+
+                spdlog::info("Error removing file");
                 response->set_error_message("Error removing file");
 
                 return grpc::Status::CANCELLED;
@@ -122,7 +133,8 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                     std::ifstream inFile("data/" + file, std::ios::binary);
 
                     if(!inFile.is_open()){
-                        spdlog::warn("Failed to open file: {}", file);
+                        spdlog::error("Failed to open file: {}", file);
+                        return grpc::Status::CANCELLED;
                     }
 
                     std::ostringstream buffer;

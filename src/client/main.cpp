@@ -15,7 +15,25 @@ void upload_file (const std::string& filepath) {
     std::string filename = std::filesystem::path(filepath).filename().string();
 }
 
-void list_files() {
+void list_files(naming::NamingService::Stub &naming_stub) {
+    grpc::ClientContext context;
+    naming::Empty empty;
+    naming::FileListResponse res;
+
+    auto status = naming_stub.ListFiles(&context, empty, &res);
+
+    if(!status.ok()) {
+        spdlog::error("List Files RPC failed");
+    }
+
+    if(res.filepaths().size() == 0){
+        std::cout << "No files in filesystem" << std::endl;
+        return;
+    }
+
+    for(int i = 0; i < res.filepaths_size(); ++i) {
+        std::cout << res.filepaths(i) << std::endl;
+    }
 }
 
 int main(int argc, char** argv) {
@@ -44,7 +62,7 @@ int main(int argc, char** argv) {
     // Command: list
     auto list_cmd = app.add_subcommand("list", "List all files in the file system");
     list_cmd->callback([&]() {
-        list_files();
+        list_files(*stub);
     });
 
     // Parse CLI args

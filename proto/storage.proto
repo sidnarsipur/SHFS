@@ -53,11 +53,15 @@ message RemoveResponse {
   string error_message = 2;
 }
 
+message File {
+  string file_path = 1;
+  bytes file_data = 2;
+}
+
 message ShareRequest {
   repeated string file_paths = 1;
 }
 
 message ShareResponse {
-  repeated string file_paths = 1;
-  repeated bytes file_data = 2;
+  repeated File files = 1;
 }

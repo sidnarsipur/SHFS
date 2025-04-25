@@ -4,9 +4,13 @@ class StorageDataManager {
 public:
     StorageDataManager() = default;
 
-    ThreadSafe<std::unordered_set<std::string>> &files() { return files_; }
+    ThreadSafe<std::unordered_set<std::string>> &files() {
+        return files_;
+    }
 
-    const ThreadSafe<std::unordered_set<std::string>> &files() const { return files_; }
+    const ThreadSafe<std::unordered_set<std::string>> &files() const {
+        return files_;
+    }
 
     void addFile(const std::string &filepath) {
         files_.write([&](auto &set) { set.insert(filepath); });

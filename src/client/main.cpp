@@ -19,7 +19,7 @@ void list_files() {
 }
 
 int main(int argc, char** argv) {
-    auto stub = NamingService::NewStub(grpc::CreateChannel("localhost:6000", grpc::InsecureChannelCredentials()));
+    auto stub = naming::NamingService::NewStub(grpc::CreateChannel("localhost:6000", grpc::InsecureChannelCredentials()));
 
     CLI::App app{"File System CLI"};
     app.require_subcommand(1);

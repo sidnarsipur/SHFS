@@ -13,14 +13,12 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 grpc::ServerReader<storage::UploadRequest>* reader,
                 storage::UploadResponse* response)
                 override {
-            std::unique_lock lock(mu_);
 
-            // Here we can process the stream of file data from the client
+            std::unique_lock lock(mu_);
             storage::UploadRequest request;
+
             while (reader->Read(&request)) {
-                // Process file data (e.g., write to disk or memory)
                 spdlog::info("Received Upload Request for file {}", request.filepath());
-                // Append the received chunk to the storage (e.g., file on disk)
                 std::ofstream newFile("data/" + request.filepath());
 
                 if(newFile.is_open()){
@@ -45,6 +43,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 const storage::DownloadRequest* request,
                 grpc::ServerWriter<storage::DownloadResponse>* writer)
                 override {
+
             std::unique_lock lock(mu_);
 
             std::ifstream file("data/" + request->filepath(), std::ios::binary);
@@ -79,6 +78,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 const ::storage::RemoveRequest* request,
                 storage::RemoveResponse* response)
                 override {
+
             std::unique_lock lock(mu_);
 
             if(!sdm->fileExists(request->filepath())){
@@ -104,6 +104,42 @@ class StorageServiceImpl final : public storage::StorageService::Service {
 
             return grpc::Status::OK;
 
+        }
+
+    grpc::Status ShareFiles(
+            ::grpc::ServerContext* context,
+            const ::storage::EmptyMessage* request,
+            ::grpc::ServerWriter< ::storage::ShareResponse>* writer) override {
+
+            std::unique_lock lock(mu_);
+
+            spdlog::info("Received ShareFiles Request");
+
+            storage::ShareResponse res;
+
+            sdm->files().read([&res](const std::unordered_set<std::string>& files) {
+                for(const auto& file: files){
+                    std::ifstream inFile("data/" + file, std::ios::binary);
+
+                    if(!inFile.is_open()){
+                        spdlog::warn("Failed to open file: {}", file);
+                    }
+
+                    std::ostringstream buffer;
+                    buffer << inFile.rdbuf();
+                    inFile.close();
+
+                    auto* outFile = res.add_files();
+
+                    outFile->set_file_path(file);
+                    outFile->set_file_data(buffer.str());
+                }
+            });
+
+            writer->Write(res);
+            spdlog::info("Finished ShareFiles Request");
+
+            return grpc::Status::OK;
         }
 
     private:

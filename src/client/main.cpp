@@ -1,12 +1,19 @@
 #include "pch.h"
 
+#include <grpcpp/grpcpp.h>
+#include <fstream>
+#include <thread>
+#include <vector>
+#include <filesystem>
+#include <iostream>
+
 void upload_file(naming::NamingService::Stub &naming_stub, const std::string& filepath) {
     if (!std::filesystem::exists(filepath)) {
-           std::cout << "File does not exist: " << filepath << std::endl;
+        std::cout << "File does not exist: " << filepath << std::endl;
         return;
     }
     if (!std::filesystem::is_regular_file(filepath)) {
-        std::cout << "Not a regular file:" << filepath << std::endl;
+        std::cout << "Not a regular file: " << filepath << std::endl;
         return;
     }
 
@@ -15,17 +22,61 @@ void upload_file(naming::NamingService::Stub &naming_stub, const std::string& fi
     naming::FileUploadResponse response;
 
     request.set_filepath(filepath);
-
     auto status = naming_stub.UploadFile(&context, request, &response);
 
-    if(!status.ok()){
-        std::cout << "Error Uploading File" << std::endl;
-        std::cout << response.error_message() << std::endl;
+    if (!status.ok()) {
+        std::cout << "Error Uploading File to Naming Server: " << status.error_message() << std::endl;
         return;
     }
 
-    std::cout << "Successfully uploaded file" << filepath << std::endl;
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < response.storage_addresses_size(); ++i) {
+        threads.emplace_back([filepath, address = response.storage_addresses(i)]() {
+            auto storageStub = storage::StorageService::NewStub(
+                    grpc::CreateChannel(address, grpc::InsecureChannelCredentials()));
+
+            grpc::ClientContext storage_context;
+            storage::UploadResponse storage_response;
+            std::unique_ptr<grpc::ClientWriter<storage::UploadRequest>> writer(
+                    storageStub->UploadFile(&storage_context, &storage_response));
+
+            std::ifstream file(filepath, std::ios::binary);
+            if (!file) {
+                std::cerr << "Failed to open file: " << filepath << std::endl;
+                return;
+            }
+
+            std::string file_content(
+                    (std::istreambuf_iterator<char>(file)),
+                    std::istreambuf_iterator<char>());
+
+            storage::UploadRequest upload_request;
+            upload_request.set_filepath(filepath);
+            upload_request.set_data(file_content);
+cl
+            if (!writer->Write(upload_request)) {
+                std::cerr << "Failed to write file to storage server: " << address << std::endl;
+            }
+
+            writer->WritesDone();
+            grpc::Status status = writer->Finish();
+
+            if (!status.ok()) {
+                std::cerr << "Upload to " << address << " failed: " << status.error_message() << std::endl;
+            } else if (!storage_response.success()) {
+                std::cerr << "Server responded with error: " << storage_response.error_message() << std::endl;
+            } else {
+                std::cout << "Successfully uploaded to: " << address << std::endl;
+            }
+        });
+    }
+
+    for (auto& t : threads) {
+        t.join();
+    }
 }
+
 
 void download_file(naming::NamingService::Stub &naming_stub, std::string &filepath){
 }

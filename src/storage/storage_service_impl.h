@@ -17,8 +17,10 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             std::unique_lock lock(mu_);
             storage::UploadRequest request;
 
+            spdlog::info("Received Upload Request");
+
             while (reader->Read(&request)) {
-                spdlog::info("Received Upload Request for file {}", request.filepath());
+//                spdlog::info("Received Upload Request for file {}", request.filepath());
                 std::ofstream newFile("data/" + request.filepath());
 
                 if(sdm->fileExists(request.filepath())){
@@ -31,14 +33,16 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                     newFile.write(request.data().c_str(),request.data().size());
                     spdlog::info("Finish Upload Request for file {}", request.filepath());
                     newFile.close();
-                } else {
-                    spdlog::error("File Storage failed");
-                    response->set_error_message("File Storage failed");
+
+                    response->set_success(true);
                     return grpc::Status::OK;
                 }
             }
 
-            response->set_success(true);
+            spdlog::error("File Storage failed");
+            response->set_success(false);
+            response->set_error_message("File Storage failed");
+
             return grpc::Status::OK;
         }
 

@@ -64,4 +64,5 @@ message ShareRequest {
 
 message ShareResponse {
   repeated File files = 1;
+  string error_message = 2;
 }

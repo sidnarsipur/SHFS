@@ -22,24 +22,19 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 std::ofstream newFile("data/" + request.filepath());
 
                 if(sdm->fileExists(request.filepath())){
-                    response->set_success(false);
-                    response->set_error_message("File does not exist");
-
-                    return grpc::Status::CANCELLED;
+                    response->set_error_message("File already exists. Editing file.");
+                } else {
+                    sdm->addFile(request.filepath());
                 }
 
                 if(newFile.is_open()){
                     newFile.write(request.data().c_str(),request.data().size());
-                    sdm->addFile(request.filepath());
                     spdlog::info("Finish Upload Request for file {}", request.filepath());
-
                     newFile.close();
-                }
-                else {
+                } else {
                     spdlog::error("File Storage failed");
                     response->set_error_message("File Storage failed");
-
-                    return grpc::Status::CANCELLED;
+                    return grpc::Status::OK;
                 }
             }
 
@@ -66,7 +61,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 res.set_error_message(("Failed to open file requested"));
 
                 writer->Write(res);
-                return grpc::Status::CANCELLED;
+                return grpc::Status::OK;
             }
 
             std::ostringstream buffer;
@@ -94,7 +89,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 response->set_success(false);
                 response->set_error_message("File does not exist");
 
-                return grpc::Status::CANCELLED;
+                return grpc::Status::OK;
             }
 
             try{
@@ -105,7 +100,7 @@ class StorageServiceImpl final : public storage::StorageService::Service {
                 spdlog::info("Error removing file");
                 response->set_error_message("Error removing file");
 
-                return grpc::Status::CANCELLED;
+                return grpc::Status::OK;
             }
 
             sdm->removeFile(request->filepath());
@@ -134,7 +129,9 @@ class StorageServiceImpl final : public storage::StorageService::Service {
 
                     if(!inFile.is_open()){
                         spdlog::error("Failed to open file: {}", file);
-                        return grpc::Status::CANCELLED;
+                        res.set_error_message(fmt::format("Failed to open file: {}", file));
+
+                        return grpc::Status::OK;
                     }
 
                     std::ostringstream buffer;

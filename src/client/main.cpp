@@ -1,21 +1,37 @@
 #include "pch.h"
-#include "upload.h"
-#include "download.h"
 
-
-void upload_file (const std::string& filepath) {
+void upload_file(naming::NamingService::Stub &naming_stub, const std::string& filepath) {
     if (!std::filesystem::exists(filepath)) {
-        spdlog::error("File does not exist: {}", filepath);
+           std::cout << "File does not exist: " << filepath << std::endl;
         return;
     }
     if (!std::filesystem::is_regular_file(filepath)) {
-        spdlog::error("Not a regular file: {}", filepath);
+        std::cout << "Not a regular file:" << filepath << std::endl;
         return;
     }
-    std::string filename = std::filesystem::path(filepath).filename().string();
+
+    grpc::ClientContext context;
+    naming::FileUploadRequest request;
+    naming::FileUploadResponse response;
+
+    request.set_filepath(filepath);
+
+    auto status = naming_stub.UploadFile(&context, request, &response);
+
+    if(!status.ok()){
+        std::cout << "Error Uploading File" << std::endl;
+        std::cout << response.error_message() << std::endl;
+        return;
+    }
+
+    std::cout << "Successfully uploaded file" << filepath << std::endl;
+}
+
+void download_file(naming::NamingService::Stub &naming_stub, std::string &filepath){
 }
 
 void list_files(naming::NamingService::Stub &naming_stub) {
+
     grpc::ClientContext context;
     naming::Empty empty;
     naming::FileListResponse res;
@@ -48,7 +64,7 @@ int main(int argc, char** argv) {
     std::string upload_filepath;
     upload_cmd->add_option("filepath", upload_filepath, "The file to upload")->required();
     upload_cmd->callback([&]() {
-        upload_file(upload_filepath);
+        upload_file(*stub, upload_filepath);
     });
 
     // Command: download

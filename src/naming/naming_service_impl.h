@@ -108,7 +108,23 @@ public:
         std::string addr = request->address();
         spdlog::info("Received heartbeat from: {}", addr);
 
-        dm->updateHeartbeat(request->address());
+        dm->updateHeartbeat(addr);
+        const std::vector<Task> tasks = dm->getReplicationTasks(addr);
+
+        // TODO: remove for production
+        spdlog::info("Assigning {} replication task(s) to {}: [{}]",
+                     tasks.size(), addr,
+                     fmt::join(tasks | std::views::transform([](const Task& t) {
+                         return fmt::format("{{source: {}, filepath: {}}}", t.source, t.filepath);
+                     }), ", "));
+
+        naming::TaskList* taskList = response->mutable_tasks();
+        for (const auto& task : tasks) {
+            naming::Task* newTask = taskList->add_tasks();
+            newTask->set_source(task.source);
+            newTask->set_filepath(task.filepath);
+            dm->addServerForFile(task.filepath, addr);
+        }
 
         response->set_success(true);
         return grpc::Status::OK;

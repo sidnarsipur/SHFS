@@ -1,6 +1,7 @@
 #pragma once
-#include <utility>
 
+#include "storage_data_manager.h"
+#include "heartbeat_signaler.h"
 #include "storage_service_impl.h"
 
 class StorageNode {
@@ -8,9 +9,7 @@ class StorageNode {
         StorageNode(std::string naming_address, std::string storage_address):
             naming_address_(std::move(naming_address)),
             storage_address_(std::move(storage_address)),
-            naming_stub_(naming::NamingService::NewStub(grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))),
-            service_(std::move(storage_address), std::make_shared<StorageDataManager>())
-            {}
+            naming_stub_(naming::NamingService::NewStub(grpc::CreateChannel(naming_address_, grpc::InsecureChannelCredentials()))) {}
 
         void Register() const {
             naming::RegisterStorageRequest req;
@@ -18,32 +17,14 @@ class StorageNode {
             grpc::ClientContext ctx;
 
             req.set_storage_address(storage_address_);
-            auto status = naming_stub_->RegisterStorageServer(&ctx, req, &res);
+            const auto status = naming_stub_->RegisterStorageServer(&ctx, req, &res);
 
             if (!status.ok()) {
-                spdlog::error("Registration failed: {}", status.error_message());
+                spdlog::error("Registration failed. Is Naming server running?\n{}", status.error_message());
                 std::exit(EXIT_FAILURE);
             }
 
             spdlog::info("Registered Storage Server",storage_address_ );
-        }
-
-        bool SendHeartbeat() const {
-            naming::HeartbeatRequest req;
-            naming::HeartbeatResponse res;
-            grpc::ClientContext ctx;
-
-            req.set_address(storage_address_);
-            auto status = naming_stub_->Heartbeat(&ctx, req, &res);
-
-            if (status.ok()) {
-                spdlog::info("Heartbeat Ack: {}", res.error_message());
-                return true;
-            }
-            else {
-                spdlog::warn("Heartbeat Failed: {}", status.error_message());
-                return false;
-            }
         }
 
         void Run() {
@@ -51,13 +32,21 @@ class StorageNode {
             grpc::EnableDefaultHealthCheckService(true);
             grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
+            auto manager = std::make_shared<StorageDataManager>();
+            HeartbeatSignaler signaler(storage_address_, manager,  *naming_stub_, 5);
+            StorageServiceImpl service(storage_address_, manager);
+
             grpc::ServerBuilder builder;
             builder.AddListeningPort(storage_address_, grpc::InsecureServerCredentials());
-            builder.RegisterService(&service_);
+            builder.RegisterService(&service);
 
-            auto server = builder.BuildAndStart();
+            const auto server = builder.BuildAndStart();
+            signaler.Start();
             spdlog::info("Storage Server Listening on {}", storage_address_);
+
             server->Wait();
+            spdlog::info("Storage Server Stopped");
+            signaler.Stop();
         }
 
     private:
@@ -66,7 +55,4 @@ class StorageNode {
 
         // Stub for talking to the naming server
         std::unique_ptr<naming::NamingService::Stub> naming_stub_;
-
-        // Your implementation of the storage‑side RPCs
-        StorageServiceImpl service_;
 };

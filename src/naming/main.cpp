@@ -3,8 +3,6 @@
 #include "heartbeat_monitor.h"
 #include "naming_service_impl.h"
 
-
-
 int main(int argc, char **argv) {
     const std::string port = (argc > 1 ? argv[1] : "6000");
     const std::string naming_address_ = "localhost:" + port;

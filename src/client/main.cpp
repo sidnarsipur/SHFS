@@ -1,12 +1,5 @@
 #include "pch.h"
 
-#include <grpcpp/grpcpp.h>
-#include <fstream>
-#include <thread>
-#include <vector>
-#include <filesystem>
-#include <iostream>
-
 void upload_file(naming::NamingService::Stub &naming_stub, const std::string& filepath) {
     if (!std::filesystem::exists(filepath)) {
         std::cout << "File does not exist: " << filepath << std::endl;
@@ -54,7 +47,6 @@ void upload_file(naming::NamingService::Stub &naming_stub, const std::string& fi
             storage::UploadRequest upload_request;
             upload_request.set_filepath(filepath);
             upload_request.set_data(file_content);
-cl
             if (!writer->Write(upload_request)) {
                 std::cerr << "Failed to write file to storage server: " << address << std::endl;
             }

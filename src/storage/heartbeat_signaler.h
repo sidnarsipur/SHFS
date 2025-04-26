@@ -35,7 +35,7 @@ private:
     std::atomic<bool> stop_flag_;
     std::thread thread_;
 
-    void SendHeartbeat() const {
+    void SendHeartbeat() {
         naming::HeartbeatRequest req;
         naming::HeartbeatResponse res;
         grpc::ClientContext ctx;
@@ -45,6 +45,58 @@ private:
 
         if (!status.ok()) {
             spdlog::warn("Heartbeat Failed: {}", status.error_message());
+            return;
+        }
+
+        handleTasksConcurrently(res.tasks());
+    }
+
+    void handleTasksConcurrently(const naming::TaskList &res) const {
+        std::vector<std::thread> threads;
+
+        for (const auto &protoTask: res.tasks()) {
+            threads.emplace_back([&]() {
+                processReplicationTask(protoTask);
+            });
+        }
+
+        for (auto &t: threads) {
+            if (t.joinable()) {
+                t.join();
+            }
+        }
+    }
+
+    // Placeholder function
+    void processReplicationTask(const naming::Task &task) const {
+        auto stub = storage::StorageService::NewStub(
+            CreateChannel(task.source(), grpc::InsecureChannelCredentials()));
+
+        grpc::ClientContext context;
+        storage::DownloadResponse response;
+        storage::DownloadRequest request;
+        request.set_filepath(task.filepath());
+
+        std::unique_ptr reader(stub->DownloadFile(&context, request));
+        std::ofstream outFile("data/" + task.filepath(), std::ios::binary);
+        bool success = false;
+
+        while (reader->Read(&response)) {
+            if (!response.success()) {
+                spdlog::error("Download failed: {}", response.error_message());
+                break;
+            }
+            outFile << response.file_data();
+            success = true;
+        }
+
+        outFile.close();
+        grpc::Status status = reader->Finish();
+        if (!status.ok()) {
+            spdlog::error("gRPC failed: {}", status.error_message());
+        } else if (success) {
+            spdlog::info("Downloaded: {} from {}", task.filepath(), task.source());
+            dm->addFile(task.filepath());
         }
     }
 };

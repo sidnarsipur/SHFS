@@ -112,11 +112,11 @@ public:
         const std::vector<Task> tasks = dm->getReplicationTasks(addr);
 
         // TODO: remove for production
-        spdlog::info("Assigning {} replication task(s) to {}: [{}]",
-                     tasks.size(), addr,
-                     fmt::join(tasks | std::views::transform([](const Task& t) {
-                         return fmt::format("{{source: {}, filepath: {}}}", t.source, t.filepath);
-                     }), ", "));
+        // spdlog::info("Assigning {} replication task(s) to {}: [{}]",
+        //              tasks.size(), addr,
+        //              fmt::join(tasks | std::views::transform([](const Task& t) {
+        //                  return fmt::format("{{source: {}, filepath: {}}}", t.source, t.filepath);
+        //              }), ", "));
 
         naming::TaskList* taskList = response->mutable_tasks();
         for (const auto& task : tasks) {

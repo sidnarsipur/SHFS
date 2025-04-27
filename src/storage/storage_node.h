@@ -40,7 +40,7 @@ class StorageNode {
 
             const auto server = builder.BuildAndStart();
             signaler.Start();
-            spdlog::info("Storage Server Listening on {}", storage_address_);
+            // spdlog::info("Storage Server Listening on {}", storage_address_);
 
             server->Wait();
             spdlog::info("Storage Server Stopped");

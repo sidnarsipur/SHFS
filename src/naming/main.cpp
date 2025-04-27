@@ -6,13 +6,17 @@
 int main(int argc, char **argv) {
     const std::string port = (argc > 1 ? argv[1] : "6000");
     const std::string naming_address_ = "localhost:" + port;
+    const std::string timeout_str = (argc > 2 ? argv[2] : "10");
+    const int timeout = std::stoi(timeout_str);
+    const std::string replication_factor_str = (argc > 3 ? argv[3] : "2");
+    const int replication_factor = std::stoi(replication_factor_str);
 
     // enable support for curl or CLion .http requests
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
     auto manager = std::make_shared<NamingDataManager>();
-    HeartbeatMonitor monitor(manager, 5, 60);
+    HeartbeatMonitor monitor(manager, 5, timeout, replication_factor);
     // monitor.test_basic_single_source();
     // monitor.test_multiple_sources();
     NamingServiceImpl service(manager);

@@ -25,3 +25,4 @@ fabric.properties
 /build
 /mock
 /test
+!/test/test.py

@@ -42,7 +42,7 @@ public:
     }
 
     std::vector<Task> getReplicationTasks(const std::string &replica_address) {
-         return replication_tasks_.write([&](const auto &m) {
+         return replication_tasks_.write([&](auto &m) {
             if (m.contains(replica_address)) {
                 std::vector<Task> tasks = m.at(replica_address);
                 m.erase(replica_address);

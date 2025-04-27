@@ -23,8 +23,6 @@ class StorageNode {
                 spdlog::error("Registration failed. Is Naming server running?\n{}", status.error_message());
                 std::exit(EXIT_FAILURE);
             }
-
-            spdlog::info("Registered Storage Server",storage_address_ );
         }
 
         void Run() {

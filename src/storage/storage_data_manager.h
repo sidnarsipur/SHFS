@@ -21,7 +21,7 @@ public:
     }
 
     bool fileExists(const std::string &filepath) {
-        return files_.get().find(filepath) != files_.get().end();
+        return files_.get().contains(filepath);
     }
 
 private:

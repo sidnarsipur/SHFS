@@ -2,7 +2,7 @@
 
 class NamingServiceImpl final : public naming::NamingService::Service {
 public:
-    explicit NamingServiceImpl(std::shared_ptr<NamingDataManager> manager, const int delay = 1)
+    explicit NamingServiceImpl(std::shared_ptr<NamingDataManager> manager, const int delay = 0)
         : dm(std::move(manager)), delay_(delay) {}
 
     grpc::Status RegisterStorageServer(

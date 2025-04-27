@@ -48,6 +48,12 @@ private:
             return;
         }
 
+        // create a fake response
+        // naming::HeartbeatResponse res;
+        // naming::TaskList* taskList = res.mutable_tasks();
+        // naming::Task* task = taskList->add_tasks();
+        // task->set_filepath("test.txt");
+        // task->set_source("source_address");
         handleTasksConcurrently(res.tasks());
     }
 

@@ -24,3 +24,4 @@ fabric.properties
 
 /build
 /mock
+/test

@@ -73,11 +73,10 @@ class StorageServiceImpl final : public storage::StorageService::Service {
             file.close();
 
             res.set_file_data(buffer.str());
-
+            res.set_success(true);
             writer->Write(res);
 
             spdlog::info("Finish Download Request for file {}", request->filepath());
-
             return grpc::Status::OK;
         }
 

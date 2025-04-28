@@ -188,6 +188,23 @@ void info_files(naming::NamingService::Stub &naming_stub, bool server) {
     }
 }
 
+void remove_file(naming::NamingService::Stub &naming_stub, const std::string& filepath) {
+    grpc::ClientContext context;
+    naming::FileRemoveRequest request;
+    naming::FileRemoveResponse response;
+
+    request.set_filepath(filepath);
+
+    auto status = naming_stub.RemoveFile(&context, request, &response);
+
+    if (!status.ok()) {
+        std::cout << "Error Removing File: " << status.error_message() << std::endl;
+        return;
+    }
+
+    std::cout << "Succesfully Removed File" << std::endl;
+}
+
 void list_files(naming::NamingService::Stub &naming_stub) {
 
     grpc::ClientContext context;
@@ -231,6 +248,13 @@ int main(int argc, char** argv) {
     download_cmd->add_option("filename", download_filename, "The file to read")->required();
     download_cmd->callback([&]() {
         download_file(*stub, download_filename);
+    });
+
+    auto remove_cmd = app.add_subcommand("remove", "Remove a file from the file system");
+    std::string remove_filename;
+    remove_cmd->add_option("filename", remove_filename, "The file to remove")->required();
+    remove_cmd->callback([&]() {
+        remove_file(*stub, remove_filename);
     });
 
     // Command: list

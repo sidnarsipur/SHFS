@@ -131,7 +131,7 @@ void download_file(naming::NamingService::Stub &naming_stub, std::string &filepa
    std::cout << "Successfully Downloaded File " << filepath << std::endl;
 }
 
-void info_files(naming::NamingService::Stub &naming_stub) {
+void info_files(naming::NamingService::Stub &naming_stub, bool server) {
     grpc::ClientContext context;
     naming::Empty e;
     naming::FileToServersMapping response;
@@ -143,22 +143,48 @@ void info_files(naming::NamingService::Stub &naming_stub) {
         return;
     }
 
-    std::cout << "file | servers" << std::endl;
-    std::cout << "----------------" << std::endl;
+    if (server) {
+        std::cout << "server | files" << std::endl;
+        std::cout << "----------------" << std::endl;
 
-    for (int i = 0; i < response.serverswithfile_size(); i++) {
-        naming::ServersWithFile s = response.serverswithfile(i);
+        std::map<std::string, std::vector<std::string>> server_to_files;
 
-        std::cout << s.filepath() << " | ";
+        for (int i = 0; i < response.serverswithfile_size(); i++) {
+            naming::ServersWithFile s = response.serverswithfile(i);
 
-        for (int j = 0; j < s.servers_size(); j++) {
-            std::cout << s.servers(j);
-            if (j < s.servers_size() - 1) {
-                std::cout << ", ";
+            for (int j = 0; j < s.servers_size(); j++) {
+                server_to_files[s.servers(j)].push_back(s.filepath());
             }
         }
 
-        std::cout << std::endl;
+        for (const auto &[server, files] : server_to_files) {
+            std::cout << server << " | ";
+            for (size_t i = 0; i < files.size(); ++i) {
+                std::cout << files[i];
+                if (i < files.size() - 1) {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << std::endl;
+        }
+    } else {
+        std::cout << "file | servers" << std::endl;
+        std::cout << "----------------" << std::endl;
+
+        for (int i = 0; i < response.serverswithfile_size(); i++) {
+            naming::ServersWithFile s = response.serverswithfile(i);
+
+            std::cout << s.filepath() << " | ";
+
+            for (int j = 0; j < s.servers_size(); j++) {
+                std::cout << s.servers(j);
+                if (j < s.servers_size() - 1) {
+                    std::cout << ", ";
+                }
+            }
+
+            std::cout << std::endl;
+        }
     }
 }
 
@@ -213,10 +239,13 @@ int main(int argc, char** argv) {
         list_files(*stub);
     });
 
+    bool server = false;
+
     // Command: info
     auto info_cmd = app.add_subcommand("info", "List all files and their locations in the file system");
+    info_cmd->add_flag("-s, --server", server, "Display info by server instead");
     info_cmd->callback([&]() {
-        info_files(*stub);
+        info_files(*stub, server);
     });
 
     // Parse CLI args

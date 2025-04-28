@@ -11,11 +11,9 @@ struct Task {
 
 class NamingDataManager {
 public:
-    // Added CLI parameters as public fields
     const int delay;
     const int replication_factor;
 
-    // Updated constructor to accept CLI parameters
     explicit NamingDataManager(int delay = 0, int replication_factor = 2)
         : delay(delay), replication_factor(replication_factor) {}
 

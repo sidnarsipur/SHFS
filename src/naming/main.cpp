@@ -16,11 +16,8 @@ int main(int argc, char **argv) {
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
-    // Pass CLI parameters to NamingDataManager
-    auto manager = std::make_shared<NamingDataManager>(delay, timeout, replication_factor);
-    
-    // No longer need to pass parameters to these classes
-    HeartbeatMonitor monitor(manager);
+    auto manager = std::make_shared<NamingDataManager>(delay, replication_factor);
+    HeartbeatMonitor monitor(manager, 5, timeout);
     // monitor.test_basic_single_source();
     // monitor.test_multiple_sources();
     NamingServiceImpl service(manager);

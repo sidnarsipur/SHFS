@@ -202,7 +202,7 @@ void remove_file(naming::NamingService::Stub &naming_stub, const std::string& fi
         return;
     }
 
-    std::cout << "Succesfully Removed File" << std::endl;
+    std::cout << "Successfully Removed File" << std::endl;
 }
 
 void list_files(naming::NamingService::Stub &naming_stub) {

@@ -82,7 +82,7 @@ void download_file(naming::NamingService::Stub &naming_stub, std::string &filepa
     auto status = naming_stub.FindServersWithFile(&context, request, &response);
 
     if(!status.ok()){
-        std::cout << "Error Downloading File details from Naming Server: " << status.error_message() << std::endl;
+        std::cout << "Error Downloading File: " << status.error_message() << std::endl;
         return;
     }
 
@@ -113,7 +113,7 @@ void download_file(naming::NamingService::Stub &naming_stub, std::string &filepa
    while(reader->Read(&dow_res)){
        if(!fileRead){
            if(!dow_res.success()){
-               std::cout << "Error Downloading from Storage Server: " << dow_res.error_message() << std::endl;
+               std::cout << "Error Downloading File: " << status.error_message() << std::endl;
                return;
            }
 
@@ -128,7 +128,7 @@ void download_file(naming::NamingService::Stub &naming_stub, std::string &filepa
 
    newFile.close();
 
-   std::cout << "Successfully Download File " << filepath << std::endl;
+   std::cout << "Successfully Downloaded File " << filepath << std::endl;
 }
 
 void info_files(naming::NamingService::Stub &naming_stub){

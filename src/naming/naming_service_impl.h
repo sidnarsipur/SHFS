@@ -78,6 +78,11 @@ public:
 
         // TODO: handle updating a file, not just uploading new files
         const auto &filename = request->filepath();
+
+        if(dm->fileExists(filename)){
+            response->set_error_message("File already exists, editing file.");
+        }
+
         for (const auto &address: active_servers) {
             dm->addServerForFile(filename, address);
         }

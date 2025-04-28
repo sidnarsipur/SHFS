@@ -45,6 +45,12 @@ public:
         files_.write([&](auto &s) { s[filepath].erase(address); });
     }
 
+    bool fileExists(const std::string &filepath) const {
+        return files().read([&](const auto &files_map) {
+            return files_map.contains(filepath);
+        });
+    }
+
     std::vector<Task> getReplicationTasks(const std::string &replica_address) {
          return replication_tasks_.write([&](auto &m) {
             if (m.contains(replica_address)) {

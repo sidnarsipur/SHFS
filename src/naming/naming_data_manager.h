@@ -11,7 +11,13 @@ struct Task {
 
 class NamingDataManager {
 public:
-    NamingDataManager() = default;
+    // Added CLI parameters as public fields
+    const int delay;
+    const int replication_factor;
+
+    // Updated constructor to accept CLI parameters
+    explicit NamingDataManager(int delay = 0, int replication_factor = 2)
+        : delay(delay), replication_factor(replication_factor) {}
 
     ThreadSafe<std::unordered_set<std::string>> &active_servers() { return active_servers_; }
     ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>>  &files() { return files_; }

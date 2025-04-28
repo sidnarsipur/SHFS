@@ -2,15 +2,15 @@
 
 class NamingServiceImpl final : public naming::NamingService::Service {
 public:
-    explicit NamingServiceImpl(std::shared_ptr<NamingDataManager> manager, const int delay = 0)
-        : dm(std::move(manager)), delay_(delay) {}
+    explicit NamingServiceImpl(std::shared_ptr<NamingDataManager> manager)
+        : dm(std::move(manager)) {}
 
     grpc::Status RegisterStorageServer(
         grpc::ServerContext *context,
         const naming::RegisterStorageRequest *request,
         naming::RegisterStorageResponse *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
         dm->updateHeartbeat(request->storage_address());
         dm->active_servers().write([&](auto &s) { s.insert(request->storage_address()); });
@@ -25,7 +25,7 @@ public:
         const naming::FileLookupRequest *request,
         naming::FileLookupResponse *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
         const auto &filepath = request->filepath();
         if (!dm->files().read([&](const auto &s) { return s.contains(filepath); })) {
@@ -45,7 +45,7 @@ public:
         const naming::Empty *request,
         naming::FileListResponse *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
         dm->files().read([&](const auto &s) {
             for (const auto &file: s | std::views::keys) {
@@ -60,11 +60,16 @@ public:
         const naming::FileUploadRequest *request,
         naming::FileUploadResponse *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
         auto active_servers = dm->active_servers().get();
 
         if (active_servers.empty()) {
             return {grpc::StatusCode::FAILED_PRECONDITION, "No active storage server."};
+        }
+
+        if (active_servers.size() < dm->replication_factor) {
+            spdlog::critical("Not enough active storage servers to maintain replication factor of {}",
+                             dm->replication_factor);
         }
 
         for (const auto &address: active_servers) {
@@ -84,7 +89,7 @@ public:
         const naming::FileRemoveRequest *request,
         naming::FileRemoveResponse *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
         const auto &filename = request->filepath();
         if (filename.empty()) {
@@ -140,7 +145,7 @@ public:
         const naming::Empty *request,
         naming::FileToServersMapping *response
     ) override {
-        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+        std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
         dm->files().read([&](const auto &m) {
             for (const auto &[filepath, servers]: m) {
@@ -158,5 +163,4 @@ public:
 
 private:
     std::shared_ptr<NamingDataManager> dm;
-    int delay_;
 };

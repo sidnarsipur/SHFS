@@ -10,13 +10,17 @@ int main(int argc, char **argv) {
     const int timeout = std::stoi(timeout_str);
     const std::string replication_factor_str = (argc > 3 ? argv[3] : "2");
     const int replication_factor = std::stoi(replication_factor_str);
+    const int delay = 0; // Default delay
 
     // enable support for curl or CLion .http requests
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
-    auto manager = std::make_shared<NamingDataManager>();
-    HeartbeatMonitor monitor(manager, 5, timeout, replication_factor);
+    // Pass CLI parameters to NamingDataManager
+    auto manager = std::make_shared<NamingDataManager>(delay, timeout, replication_factor);
+    
+    // No longer need to pass parameters to these classes
+    HeartbeatMonitor monitor(manager);
     // monitor.test_basic_single_source();
     // monitor.test_multiple_sources();
     NamingServiceImpl service(manager);

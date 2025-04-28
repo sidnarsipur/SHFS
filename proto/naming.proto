@@ -10,7 +10,7 @@ service NamingService {
   rpc FindServersWithFile(FileLookupRequest) returns (FileLookupResponse);
 
   //Get list of each file and the server it is on
-  rpc GetFilesByServer(Empty) return (FilesByServerResponse);
+  rpc GetFilesByServer(Empty) returns (FilesByServerResponse);
 
   // List all files known to the naming server.
   rpc ListFiles(Empty) returns (FileListResponse);

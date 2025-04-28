@@ -15,9 +15,6 @@ service StorageService {
 
   //Share files with another storage server when it is initialized
   rpc ShareFiles(EmptyMessage) returns (stream ShareResponse);
-
-
-  rpc Takedown (EmptyMessage) returns (TakedownResponse);
 }
 
 message TakedownResponse{

@@ -5,6 +5,7 @@ void upload_file(naming::NamingService::Stub &naming_stub, const std::string& fi
         std::cout << "File does not exist: " << filepath << std::endl;
         return;
     }
+
     if (!std::filesystem::is_regular_file(filepath)) {
         std::cout << "Not a regular file: " << filepath << std::endl;
         return;
@@ -69,8 +70,68 @@ void upload_file(naming::NamingService::Stub &naming_stub, const std::string& fi
     }
 }
 
-
 void download_file(naming::NamingService::Stub &naming_stub, std::string &filepath){
+    std::filesystem::create_directories("data");
+
+    grpc::ClientContext context;
+    naming::FileLookupRequest request;
+    naming::FileLookupResponse response;
+
+    request.set_filepath(filepath);
+
+    auto status = naming_stub.FindServersWithFile(&context, request, &response);
+
+    if(!status.ok()){
+        std::cout << "Error Downloading File details from Naming Server: " << status.error_message() << std::endl;
+        return;
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution distrib(0, response.storage_addresses_size()-1);
+
+    int random_server_idx = distrib(gen);
+
+    std::string address = response.storage_addresses(random_server_idx);
+
+    grpc::ClientContext context2;
+    storage::DownloadRequest dow_req;
+    storage::DownloadResponse dow_res;
+
+    dow_req.set_filepath(filepath);
+
+    auto storage_stub = storage::StorageService::NewStub(
+            grpc::CreateChannel(address, grpc::InsecureChannelCredentials()));
+
+    std::unique_ptr<grpc::ClientReader<storage::DownloadResponse>> reader(
+            storage_stub->DownloadFile(&context2, dow_req));
+
+    std::ofstream newFile;
+
+    bool fileRead = false;
+
+   while(reader->Read(&dow_res)){
+       if(!fileRead){
+           if(!dow_res.success()){
+               std::cout << "Error Downloading from Storage Server: " << dow_res.error_message() << std::endl;
+               return;
+           }
+
+           newFile.open("data/" + request.filepath());
+           fileRead = true;
+       }
+
+       if(newFile.is_open()){
+           newFile.write(dow_res.file_data().c_str(), dow_res.file_data().size());
+       }
+   }
+
+   newFile.close();
+
+   std::cout << "Successfully Download File " << filepath << std::endl;
+}
+
+void info_files(naming::NamingService::Stub &naming_stub){
 }
 
 void list_files(naming::NamingService::Stub &naming_stub) {
@@ -122,6 +183,12 @@ int main(int argc, char** argv) {
     auto list_cmd = app.add_subcommand("list", "List all files in the file system");
     list_cmd->callback([&]() {
         list_files(*stub);
+    });
+
+    // Command: info
+    auto info_cmd = app.add_subcommand("info", "List all files and their locations in the file system");
+    info_cmd->callback([&]() {
+        info_files(*stub);
     });
 
     // Parse CLI args

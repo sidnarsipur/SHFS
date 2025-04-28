@@ -94,6 +94,5 @@ def replication_on_failure_test():
 def main():
     replication_on_failure_test()
 
-
 if __name__ == "__main__":
     main()

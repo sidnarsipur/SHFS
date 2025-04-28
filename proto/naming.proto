@@ -9,6 +9,9 @@ service NamingService {
   // Get list of storage servers that have a specific file.
   rpc FindServersWithFile(FileLookupRequest) returns (FileLookupResponse);
 
+  //Get list of each file and the server it is on
+  rpc GetFilesByServer(Empty) return (FilesByServerResponse);
+
   // List all files known to the naming server.
   rpc ListFiles(Empty) returns (FileListResponse);
 
@@ -42,6 +45,16 @@ message FileLookupRequest {
 
 message FileLookupResponse {
   repeated string storage_addresses = 1;
+  string error_message = 2;
+}
+
+message FileServer {
+  string filepath = 1;
+  repeated string servers = 2;
+}
+
+message FilesByServerResponse {
+  repeated FileServer fileservers = 1;
   string error_message = 2;
 }
 

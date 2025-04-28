@@ -118,9 +118,9 @@ public:
         //                  return fmt::format("{{source: {}, filepath: {}}}", t.source, t.filepath);
         //              }), ", "));
 
-        naming::TaskList* taskList = response->mutable_tasks();
-        for (const auto& task : tasks) {
-            naming::Task* newTask = taskList->add_tasks();
+        naming::TaskList *taskList = response->mutable_tasks();
+        for (const auto &task: tasks) {
+            naming::Task *newTask = taskList->add_tasks();
             newTask->set_source(task.source);
             newTask->set_filepath(task.filepath);
             dm->addServerForFile(task.filepath, addr);
@@ -132,6 +132,27 @@ public:
 
     grpc::Status Log(grpc::ServerContext *context, const naming::Empty *request, naming::Empty *response) override {
         dm->log();
+        return grpc::Status::OK;
+    }
+
+    grpc::Status GetFileToServersMapping(
+        grpc::ServerContext *context,
+        const naming::Empty *request,
+        naming::FileToServersMapping *response
+    ) override {
+        std::this_thread::sleep_for(std::chrono::seconds(delay_));
+
+        dm->files().read([&](const auto &m) {
+            for (const auto &[filepath, servers]: m) {
+                naming::ServersWithFile *serversWithFile = response->add_serverswithfile();
+                serversWithFile->set_filepath(filepath);
+
+                for (const auto &server: servers) {
+                    serversWithFile->add_servers(server);
+                }
+            }
+        });
+
         return grpc::Status::OK;
     }
 

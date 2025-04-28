@@ -10,7 +10,7 @@ service NamingService {
   rpc FindServersWithFile(FileLookupRequest) returns (FileLookupResponse);
 
   //Get list of each file and the server it is on
-  rpc GetFilesByServer(Empty) returns (FilesByServerResponse);
+  rpc GetFileToServersMapping(Empty) returns (FileToServersMapping);
 
   // List all files known to the naming server.
   rpc ListFiles(Empty) returns (FileListResponse);
@@ -48,13 +48,13 @@ message FileLookupResponse {
   string error_message = 2;
 }
 
-message FileServer {
+message ServersWithFile {
   string filepath = 1;
   repeated string servers = 2;
 }
 
-message FilesByServerResponse {
-  repeated FileServer fileservers = 1;
+message FileToServersMapping {
+  repeated ServersWithFile serversWithFile = 1;
   string error_message = 2;
 }
 

@@ -2,8 +2,8 @@
 
 class HeartbeatMonitor {
 public:
-    explicit HeartbeatMonitor(std::shared_ptr<NamingDataManager> manager, const int interval, const int timeout, const int replication_factor)
-        : dm(std::move(manager)), interval_(interval), timeout_(timeout), replication_factor_(replication_factor), stop_flag_(false) {}
+    explicit HeartbeatMonitor(std::shared_ptr<NamingDataManager> manager, const int interval = 5, const int timeout = 10)
+        : dm(std::move(manager)), interval_(interval), timeout_(timeout), stop_flag_(false) {}
 
     void Start() {
         thread_ = std::thread([this] {
@@ -31,7 +31,7 @@ public:
                     active_servers.erase(addr);
                 }
                 dm->active_servers().set(active_servers);
-                if (active_servers.size() < replication_factor_) {
+                if (active_servers.size() < dm->replication_factor) {
                     spdlog::critical("Not enough active servers for replication! Please bring up more servers");
                     std::this_thread::sleep_for(std::chrono::seconds(interval_));
                     continue;
@@ -49,7 +49,7 @@ public:
                             spdlog::critical("File {} is not available anymore", file);
                             continue;
                         }
-                        if (servers.size() < replication_factor_) {
+                        if (servers.size() < dm->replication_factor) {
                             spdlog::info("replicating file {} to active servers", file);
                             addReplicationTask(servers, active_servers, replication_tasks, file);
                         }
@@ -107,7 +107,6 @@ private:
     std::shared_ptr<NamingDataManager> dm;
     int interval_;
     int timeout_;
-    int replication_factor_;
     std::atomic<bool> stop_flag_;
     std::thread thread_;
 
@@ -126,7 +125,7 @@ private:
         }
 
         // Step 2: Take the first k replicas
-        unsigned int k = replication_factor_ - sources.size();
+        unsigned int k = dm->replication_factor - sources.size();
         if (k > replicas.size()) k = replicas.size();
         const std::vector selected_replicas(replicas.begin(), replicas.begin() + k);
 
@@ -141,3 +140,4 @@ private:
         }
     }
 };
+

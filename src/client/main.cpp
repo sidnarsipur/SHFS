@@ -131,7 +131,35 @@ void download_file(naming::NamingService::Stub &naming_stub, std::string &filepa
    std::cout << "Successfully Downloaded File " << filepath << std::endl;
 }
 
-void info_files(naming::NamingService::Stub &naming_stub){
+void info_files(naming::NamingService::Stub &naming_stub) {
+    grpc::ClientContext context;
+    naming::Empty e;
+    naming::FileToServersMapping response;
+
+    auto status = naming_stub.GetFileToServersMapping(&context, e, &response);
+
+    if (!status.ok()) {
+        std::cout << "Error receiving file details" << status.error_message() << std::endl;
+        return;
+    }
+
+    std::cout << "file | servers" << std::endl;
+    std::cout << "----------------" << std::endl;
+
+    for (int i = 0; i < response.serverswithfile_size(); i++) {
+        naming::ServersWithFile s = response.serverswithfile(i);
+
+        std::cout << s.filepath() << " | ";
+
+        for (int j = 0; j < s.servers_size(); j++) {
+            std::cout << s.servers(j);
+            if (j < s.servers_size() - 1) {
+                std::cout << ", ";
+            }
+        }
+
+        std::cout << std::endl;
+    }
 }
 
 void list_files(naming::NamingService::Stub &naming_stub) {

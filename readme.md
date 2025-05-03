@@ -39,22 +39,17 @@ Before building the project, make sure the following tools and libraries are ins
 
 ### Step 1: Create a Build Directory
 
-It’s a good practice to build the project in a separate directory. Create a build directory and navigate into it:
-
 ```bash
 mkdir build
-cd build
 ```
 
 ### Step 2: Configure the Project
 
-Use `cmake` to configure the project, specifying the vcpkg toolchain:
+Use `cmake` to save a configuration for the project, specifying the vcpkg toolchain:
 
 ```bash
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
-
-This command will configure the project, utilizing the installed dependencies from vcpkg.
 
 ### Step 3: Build the Project
 
@@ -65,6 +60,14 @@ cmake --build build
 ```
 
 This will compile the source code and generate the necessary executables in the appropriate directories.
+
+### Step 5: Running the executables
+
+Run like so:
+
+```bash
+./build/src/client/client.exe
+```
 
 ## Additional Information
 

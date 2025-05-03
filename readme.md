@@ -51,7 +51,7 @@ cd build
 Use `cmake` to configure the project, specifying the vcpkg toolchain:
 
 ```bash
-cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
 
 This command will configure the project, utilizing the installed dependencies from vcpkg.
@@ -61,7 +61,7 @@ This command will configure the project, utilizing the installed dependencies fr
 After configuring the project, build it using:
 
 ```bash
-cmake --build .
+cmake --build build
 ```
 
 This will compile the source code and generate the necessary executables in the appropriate directories.

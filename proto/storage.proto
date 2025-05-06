@@ -17,6 +17,11 @@ service StorageService {
   rpc ShareFiles(EmptyMessage) returns (stream ShareResponse);
 }
 
+message TakedownResponse{
+  bool success = 1;
+  string error_message = 2;
+}
+
 // Empty message type
 message EmptyMessage {}
 

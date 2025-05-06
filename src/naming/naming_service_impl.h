@@ -78,8 +78,11 @@ public:
         const int upload_server_count = std::min(dm->replication_factor, static_cast<int>(active_servers.size()));
         std::vector<std::string> selected_servers = dm->getLeastLoadedServers(upload_server_count);
 
-        // TODO: handle updating a file, not just uploading new files
         const auto &filename = request->filepath();
+        if(dm->fileExists(filename)){
+            response->set_error_message("File already exists, editing file.");
+        }
+
         for (const auto &address: selected_servers) {
             dm->addServerForFile(filename, address);
         }

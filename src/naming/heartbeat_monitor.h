@@ -8,18 +8,15 @@ public:
     void Start() {
         thread_ = std::thread([this] {
             while (!stop_flag_.load()) {
-                auto active_servers = dm->active_servers().get();
+                auto servers = dm->servers().get();
                 std::vector<std::string> down_servers;
 
                 // Generate a list of down servers
-                dm->server_state().read([&](const auto &m) {
-                    for (const auto &[addr, time]: m) {
-                        if (!active_servers.contains(addr)) continue;
-                        if (std::chrono::steady_clock::now() - time > std::chrono::seconds(timeout_)) {
-                            down_servers.push_back(addr);
-                        }
+                for (const auto &[addr, server]: servers) {
+                    if (std::chrono::steady_clock::now() - server.last_heartbeat > std::chrono::seconds(timeout_)) {
+                        down_servers.push_back(addr);
                     }
-                });
+                }
                 if (down_servers.empty()) {
                     std::this_thread::sleep_for(std::chrono::seconds(interval_));
                     continue;
@@ -28,30 +25,36 @@ public:
                 // Remove down servers from active servers
                 for (const auto &addr: down_servers) {
                     spdlog::critical("Server {} is down", addr);
-                    active_servers.erase(addr);
+                    servers.erase(addr);
                 }
-                dm->active_servers().set(active_servers);
-                if (active_servers.size() < dm->replication_factor) {
+                dm->servers().set(servers);
+
+                if (servers.size() < dm->replication_factor) {
                     spdlog::critical("Not enough active servers for replication! Please bring up more servers");
                     std::this_thread::sleep_for(std::chrono::seconds(interval_));
                     continue;
                 }
 
+                std::unordered_set<std::string> active_servers;
+                for (const auto &[addr, server]: servers) {
+                    active_servers.insert(addr);
+                }
+
                 // Remove down servers from files, and generate a list of replication tasks
                 std::unordered_map<std::string, std::vector<Task>> replication_tasks;
                 dm->files().write([&](auto &s) {
-                    for (auto &[file, servers]: s) {
+                    for (auto &[file, serversWithFile]: s) {
                         for (const auto &addr: down_servers) {
-                            servers.erase(addr);
+                            serversWithFile.erase(addr);
                         }
-                        if (servers.empty()) {
+                        if (serversWithFile.empty()) {
                             s.erase(file);
                             spdlog::critical("File {} is not available anymore", file);
                             continue;
                         }
-                        if (servers.size() < dm->replication_factor) {
+                        if (serversWithFile.size() < dm->replication_factor) {
                             spdlog::info("replicating file {} to active servers", file);
-                            addReplicationTask(servers, active_servers, replication_tasks, file);
+                            addReplicationTask(serversWithFile, active_servers, replication_tasks, file);
                         }
                     }
                 });

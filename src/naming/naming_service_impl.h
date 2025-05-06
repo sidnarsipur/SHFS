@@ -12,8 +12,7 @@ public:
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
 
-        dm->updateHeartbeat(request->storage_address());
-        dm->active_servers().write([&](auto &s) { s.insert(request->storage_address()); });
+        dm->newServer(request->storage_address());
         spdlog::info("Registered Storage Server {}", request->storage_address());
 
         response->set_success(true);
@@ -61,7 +60,7 @@ public:
         naming::FileUploadResponse *response
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
-        auto active_servers = dm->active_servers().get();
+        auto active_servers = dm->servers().get();
 
         if (active_servers.empty()) {
             return {grpc::StatusCode::FAILED_PRECONDITION, "No active storage server."};
@@ -72,13 +71,16 @@ public:
                              dm->replication_factor);
         }
 
-        for (const auto &address: active_servers) {
+        for (const auto &address: active_servers| std::views::keys) {
             response->add_storage_addresses(address);
         }
 
+        const int upload_server_count = std::min(dm->replication_factor, static_cast<int>(active_servers.size()));
+        std::vector<std::string> selected_servers = dm->getLeastLoadedServers(upload_server_count);
+
         // TODO: handle updating a file, not just uploading new files
         const auto &filename = request->filepath();
-        for (const auto &address: active_servers) {
+        for (const auto &address: selected_servers) {
             dm->addServerForFile(filename, address);
         }
         return grpc::Status::OK;

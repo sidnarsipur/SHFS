@@ -9,6 +9,11 @@ struct Task {
     }
 };
 
+struct Server {
+    std::unordered_set<std::string> files;
+    std::chrono::steady_clock::time_point last_heartbeat;
+};
+
 class NamingDataManager {
 public:
     const int delay;
@@ -17,24 +22,28 @@ public:
     explicit NamingDataManager(int delay = 0, int replication_factor = 2)
         : delay(delay), replication_factor(replication_factor) {}
 
-    ThreadSafe<std::unordered_set<std::string>> &active_servers() { return active_servers_; }
     ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>>  &files() { return files_; }
-    ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> &server_state() {
-        return server_state_;
-    }
+    ThreadSafe<std::unordered_map<std::string, Server>> &servers() { return servers_; }
     ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> &replication_tasks() { return replication_tasks_; }
 
-    const ThreadSafe<std::unordered_set<std::string>> &active_servers() const { return active_servers_; }
     const ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>>  &files() const { return files_; }
-    const ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> &server_state() const {
-        return server_state_;
-    }
+    const ThreadSafe<std::unordered_map<std::string, Server>> &servers() const { return servers_; }
     const ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> &replication_tasks() const {
         return replication_tasks_;
     }
 
+    void newServer(const std::string &address) {
+        servers_.write([&](auto &m) {
+            m[address] = Server{{}, std::chrono::steady_clock::now()};
+        });
+    }
+
     void updateHeartbeat(const std::string &address) {
-        server_state_.write([&](auto &m) { m[address] = std::chrono::steady_clock::now(); });
+        servers_.write([&](auto &m) {
+            if (m.contains(address)) {
+                m[address].last_heartbeat = std::chrono::steady_clock::now();
+            }
+        });
     }
 
     void addServerForFile(const std::string &filepath, const std::string &address) {
@@ -43,6 +52,22 @@ public:
 
     void removeServerForFile(const std::string &filepath, const std::string &address) {
         files_.write([&](auto &s) { s[filepath].erase(address); });
+    }
+
+    std::vector<std::string> getLeastLoadedServers(int n) {
+        return servers_.read([&](const auto &m) {
+            std::vector<std::pair<std::string, int>> server_loads;
+            for (const auto &[address, server] : m) {
+                server_loads.emplace_back(address, server.files.size());
+            }
+            std::sort(server_loads.begin(), server_loads.end(),
+                      [](const auto &a, const auto &b) { return a.second < b.second; });
+            std::vector<std::string> least_loaded_servers;
+            for (int i = 0; i < n && i < server_loads.size(); ++i) {
+                least_loaded_servers.push_back(server_loads[i].first);
+            }
+            return least_loaded_servers;
+        });
     }
 
     std::vector<Task> getReplicationTasks(const std::string &replica_address) {
@@ -59,27 +84,11 @@ public:
     void log() const {
         std::ostringstream oss;
 
-        // Log active servers
-        oss << "\nActive Servers:\n";
-        active_servers_.read([&](const auto &servers) {
-            for (const auto &server : servers) {
-                oss << "  - " << server << "\n";
-            }
-        });
-
         // Log files
         oss << "Files:\n";
         files_.read([&](const auto &file_set) {
             for (const auto &file : file_set | std::views::keys) {
                 oss << "  - " << file << "\n";
-            }
-        });
-
-        // Log server state
-        oss << "Server State:\n";
-        server_state_.read([&](const auto &state) {
-            for (const auto &[server, _] : state) {
-                oss << "  - " << server << "\n";
             }
         });
 
@@ -98,8 +107,7 @@ public:
     }
 
 private:
-    ThreadSafe<std::unordered_set<std::string>> active_servers_;
     ThreadSafe<std::unordered_map<std::string, std::unordered_set<std::string>>> files_;
-    ThreadSafe<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> server_state_;
+    ThreadSafe<std::unordered_map<std::string, Server>> servers_;
     ThreadSafe<std::unordered_map<std::string, std::vector<Task>>> replication_tasks_;
 };

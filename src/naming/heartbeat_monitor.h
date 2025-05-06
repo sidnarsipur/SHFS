@@ -53,7 +53,7 @@ public:
                             continue;
                         }
                         if (serversWithFile.size() < dm->replication_factor) {
-                            spdlog::info("replicating file {} to active servers", file);
+                            spdlog::critical("File {} is underreplicated! replicating it to active servers...", file);
                             addReplicationTask(serversWithFile, active_servers, replication_tasks, file);
                         }
                     }

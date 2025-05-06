@@ -35,7 +35,7 @@ message RegisterStorageRequest {
 message RegisterStorageResponse {
   bool success = 1;
   string error_message = 2;
-  string storage_address = 3;
+  TaskList tasks = 3;
 }
 
 // Request to get all storage servers that store the file

@@ -60,7 +60,7 @@ public:
         naming::FileUploadResponse *response
     ) override {
         std::this_thread::sleep_for(std::chrono::seconds(dm->delay));
-        auto active_servers = dm->servers().get();
+        const auto active_servers = dm->servers().get();
 
         if (active_servers.empty()) {
             return {grpc::StatusCode::FAILED_PRECONDITION, "No active storage server."};
@@ -71,20 +71,17 @@ public:
                              dm->replication_factor);
         }
 
-        for (const auto &address: active_servers| std::views::keys) {
-            response->add_storage_addresses(address);
-        }
-
-        const int upload_server_count = std::min(dm->replication_factor, static_cast<int>(active_servers.size()));
-        std::vector<std::string> selected_servers = dm->getLeastLoadedServers(upload_server_count);
-
         const auto &filename = request->filepath();
         if(dm->fileExists(filename)){
             response->set_error_message("File already exists, editing file.");
         }
 
+        const int upload_server_count = std::min(dm->replication_factor, static_cast<int>(active_servers.size()));
+        const std::vector<std::string> selected_servers = dm->getLeastLoadedServers(upload_server_count);
+
         for (const auto &address: selected_servers) {
             dm->addServerForFile(filename, address);
+            response->add_storage_addresses(address);
         }
         return grpc::Status::OK;
     }
@@ -120,13 +117,6 @@ public:
 
         dm->updateHeartbeat(addr);
         const std::vector<Task> tasks = dm->getReplicationTasks(addr);
-
-        // TODO: remove for production
-        // spdlog::info("Assigning {} replication task(s) to {}: [{}]",
-        //              tasks.size(), addr,
-        //              fmt::join(tasks | std::views::transform([](const Task& t) {
-        //                  return fmt::format("{{source: {}, filepath: {}}}", t.source, t.filepath);
-        //              }), ", "));
 
         naming::TaskList *taskList = response->mutable_tasks();
         for (const auto &task: tasks) {

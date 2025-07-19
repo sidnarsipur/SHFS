@@ -1,3 +1,7 @@
+# DFS
+
+A fault tolerant distributed file system with heartbeat detection, automatic failure recovery, and dynamic file rebalancing base on server load.
+
 ## Prerequisites
 
 Before building the project, make sure the following tools and libraries are installed:
